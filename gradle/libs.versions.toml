@@ -20,7 +20,7 @@ kotlinxSerialization = "1.11.0"
 credentials = "1.6.0"
 googleid = "1.2.1"
 firebaseBom = "34.11.0"
-googleServices = "4.5.0"
+googleServices = "4.6.0"
 firebaseCrashlyticsPlugin = "3.0.8"
 
 [libraries]
