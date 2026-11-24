@@ -1,5 +1,6 @@
 package com.karasu256.karasulab.ui.linking
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.karasu256.karasulab.BuildConfig
@@ -74,6 +75,14 @@ class LinkedAccountsViewModel @Inject constructor(
         }
     }
 
+    private suspend fun refreshProvider(providerId: String) {
+        attempt { linkedProviderRepository.profiles() }.onSuccess { fetched ->
+            _uiState.update { state -> state.copy(profiles = state.profiles + (providerId to fetched[providerId])) }
+        }.onFailure { error ->
+            Log.e("LinkedAccountsViewModel", "Refreshing provider $providerId failed", error)
+        }
+    }
+
     fun messageShown() = _uiState.update { it.copy(message = null) }
 
     fun link(provider: LinkProvider, credentials: CredentialProvider) {
@@ -91,11 +100,12 @@ class LinkedAccountsViewModel @Inject constructor(
             }
             result.onSuccess { linked ->
                 if (linked) _uiState.update { it.copy(message = UiText(R.string.connections_linked, listOf(provider.label))) }
-            }.onFailure {
+            }.onFailure { error ->
+                Log.e("LinkedAccountsViewModel", "Linking ${provider.id} failed", error)
                 _uiState.update { it.copy(message = UiText(R.string.connections_link_failed)) }
             }
+            refreshProvider(provider.id)
             _uiState.update { it.copy(busyProviderId = null) }
-            load()
         }
     }
 
@@ -108,9 +118,12 @@ class LinkedAccountsViewModel @Inject constructor(
         _uiState.update { it.copy(unlinkTarget = null, busyProviderId = provider.id) }
         viewModelScope.launch {
             attempt { linkedProviderRepository.unlink(provider.id) }
-                .onFailure { _uiState.update { it.copy(message = UiText(R.string.error_unknown)) } }
+                .onSuccess { _uiState.update { it.copy(profiles = it.profiles + (provider.id to null)) } }
+                .onFailure { error ->
+                    Log.e("LinkedAccountsViewModel", "Unlinking ${provider.id} failed", error)
+                    _uiState.update { it.copy(message = UiText(R.string.error_unknown)) }
+                }
             _uiState.update { it.copy(busyProviderId = null) }
-            load()
         }
     }
 }
