@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
-/** Runs every [IInitializable] in order and exposes the step currently running. */
 @HiltViewModel
 class LoadingViewModel @Inject constructor(
     private val initializers: List<@JvmSuppressWildcards IInitializable>,
@@ -28,6 +27,5 @@ class LoadingViewModel @Inject constructor(
         }
     }
 
-    /** Suspends until every initializer has finished. */
     suspend fun awaitInitialization() = initialization.await()
 }

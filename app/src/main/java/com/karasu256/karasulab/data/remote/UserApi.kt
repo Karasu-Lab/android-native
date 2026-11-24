@@ -1,14 +1,19 @@
 package com.karasu256.karasulab.data.remote
 
+import okhttp3.MultipartBody
 import retrofit2.http.GET
+import retrofit2.http.Multipart
+import retrofit2.http.POST
+import retrofit2.http.Part
 
-/** Endpoints served by api.karasu256.com, authenticated with the custom token. */
 interface UserApi {
-    /** Returns the signed-in user's profile. */
     @GET("user/profile")
     suspend fun profile(): ProfileResponse
 
-    /** Returns what the API reports about itself; needs no token. */
     @GET("meta")
     suspend fun meta(): MetaResponse
+
+    @Multipart
+    @POST("user/profile/image")
+    suspend fun uploadProfileImage(@Part file: MultipartBody.Part): ProfileImageResponse
 }

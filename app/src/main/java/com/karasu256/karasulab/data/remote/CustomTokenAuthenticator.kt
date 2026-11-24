@@ -7,7 +7,6 @@ import okhttp3.Response
 import okhttp3.Route
 import javax.inject.Inject
 
-/** Retries a request rejected with 401 once, after re-exchanging the session for a new custom token. */
 class CustomTokenAuthenticator @Inject constructor(
     private val exchanger: SessionTokenExchanger,
 ) : Authenticator {

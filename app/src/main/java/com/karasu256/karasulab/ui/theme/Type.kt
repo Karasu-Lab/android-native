@@ -31,7 +31,6 @@ val displayFontFamily = FontFamily(
     )
 )
 
-// Default Material 3 typography values
 val baseline = Typography()
 
 val AppTypography = Typography(
@@ -52,11 +51,6 @@ val AppTypography = Typography(
     labelSmall = baseline.labelSmall.copy(fontFamily = bodyFontFamily),
 )
 
-/**
- * Downloads and caches every font [AppTypography] uses, so screens render with them from their first frame.
- *
- * A font that fails to load is skipped, leaving its text on the system fallback.
- */
 suspend fun FontFamily.Resolver.preloadAppFonts() {
     listOf(displayFontFamily, bodyFontFamily).forEach { family ->
         try {

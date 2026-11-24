@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-/** Shows a circular progress indicator in the center and the running step's description at the bottom, calling [onFinished] once every step is done. */
 @Composable
 fun LoadingScreen(
     onFinished: () -> Unit,

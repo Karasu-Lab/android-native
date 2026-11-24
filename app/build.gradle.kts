@@ -16,13 +16,16 @@ val localProperties = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 
-/** Returns the Gradle property [name], from the project's or the user's `gradle.properties`, or null when unset. */
 fun signingProperty(name: String): String? = providers.gradleProperty(name).orNull
 
-/** The keystore holding the `debug` and `release` keys, with a leading `~` expanded to the user's home directory. */
 val signingStoreFile: File? = signingProperty("signing.storeFile")
     ?.replaceFirst(Regex("^~"), Regex.escapeReplacement(System.getProperty("user.home")))
     ?.let(::file)
+    ?.takeIf { it.exists() }
+
+val signingStorePassword: String? = localProperties.getProperty("signing.storePassword")
+val signingDebugKeyPassword: String? = localProperties.getProperty("signing.debugKeyPassword")
+val signingReleaseKeyPassword: String? = localProperties.getProperty("signing.releaseKeyPassword")
 
 android {
     namespace = "com.karasu256.karasulab"
@@ -47,24 +50,37 @@ android {
     }
 
     signingConfigs {
-        if (signingStoreFile != null) {
-            getByName("debug") {
+        getByName("debug") {
+            if (signingStoreFile != null && signingStorePassword != null && signingDebugKeyPassword != null) {
                 storeFile = signingStoreFile
-                storePassword = localProperties.getProperty("signing.storePassword")
+                storePassword = signingStorePassword
                 keyAlias = "debug"
-                keyPassword = localProperties.getProperty("signing.debugKeyPassword")
+                keyPassword = signingDebugKeyPassword
+            } else {
+                storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
             }
+        }
+        if (signingStoreFile != null && signingStorePassword != null && signingReleaseKeyPassword != null) {
             create("release") {
                 storeFile = signingStoreFile
-                storePassword = localProperties.getProperty("signing.storePassword")
+                storePassword = signingStorePassword
                 keyAlias = "release"
-                keyPassword = localProperties.getProperty("signing.releaseKeyPassword")
+                keyPassword = signingReleaseKeyPassword
             }
         }
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "API_HOST", "\"local-api.karasu256.com\"")
+            buildConfigField("String", "AUTH_HOST", "\"local-api-auth.karasu256.com\"")
+        }
         release {
+            buildConfigField("String", "API_HOST", "\"api.karasu256.com\"")
+            buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
             signingConfig = signingConfigs.findByName("release")
             optimization {
                 enable = false
@@ -95,6 +111,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.compose.destinations.core)

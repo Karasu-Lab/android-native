@@ -28,13 +28,6 @@ import kotlinx.coroutines.launch
 private const val FADE_DURATION_MS = 500
 private const val STAGGER_MS = 300L
 
-/**
- * Shows `Karasu` and `LAB` stacked in the center while the app's fonts load.
- *
- * `Karasu` fades in first and `LAB` 0.3 seconds later. Once both are shown and the fonts have loaded,
- * `LAB` fades out first and `Karasu` 0.3 seconds later, then [onFinished] is called. The logo uses the
- * system font, since the app's fonts are not available until this screen finishes.
- */
 @Composable
 fun SplashScreen(onFinished: () -> Unit) {
     val karasuAlpha = remember { Animatable(0f) }

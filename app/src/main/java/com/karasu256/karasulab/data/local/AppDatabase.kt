@@ -1,20 +1,25 @@
 package com.karasu256.karasulab.data.local
 
+import androidx.room.AutoMigration
 import androidx.room.Database
+import androidx.room.DeleteTable
 import androidx.room.RoomDatabase
+import androidx.room.migration.AutoMigrationSpec
 
-/** The app's Room database holding the auth token and the cached user profile. */
-@Database(entities = [AuthTokenEntity::class, UserProfileEntity::class], version = 1)
+@Database(
+    entities = [AuthTokenEntity::class, AccountEntity::class],
+    version = 2,
+    autoMigrations = [AutoMigration(from = 1, to = 2, spec = AppDatabase.DropUserProfile::class)],
+)
 abstract class AppDatabase : RoomDatabase() {
-    /** Returns the DAO for [AuthTokenEntity]. */
     abstract fun authTokenDao(): AuthTokenDao
 
-    /** Returns the DAO for [UserProfileEntity]. */
-    abstract fun userProfileDao(): UserProfileDao
+    abstract fun accountDao(): AccountDao
 
-    /** Constants for [AppDatabase]. */
+    @DeleteTable(tableName = "user_profile")
+    class DropUserProfile : AutoMigrationSpec
+
     companion object {
-        /** File name of the database. */
         const val NAME = "app.db"
     }
 }
