@@ -1,6 +1,7 @@
 package com.karasu256.karasulab.data.auth
 
 import android.util.Base64
+import android.util.Log
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -20,6 +21,6 @@ class Base64JwtExpiry @Inject constructor(
         return runCatching {
             val decoded = Base64.decode(payload, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
             json.decodeFromString<JwtPayload>(decoded.toString(Charsets.UTF_8)).exp?.times(1000)
-        }.getOrNull()
+        }.onFailure { Log.e("JwtExpiry", "Could not read the token expiry", it) }.getOrNull()
     }
 }

@@ -26,8 +26,8 @@
     <string name="sign_in">サインイン</string>
     <string name="email">メールアドレス</string>
     <string name="or_divider">または</string>
-    <string name="sign_in_with_google">Google でサインイン</string>
-    <string name="sign_in_with_passkey">パスキーでサインイン</string>
+    <string name="sign_in_with_google">Google で続行</string>
+    <string name="sign_in_with_passkey">パスキーで続行</string>
     <string name="passkey_step_title">パスキーでサインイン</string>
     <string name="passkey_use">パスキーを使用</string>
     <string name="methods_title">サインイン方法を選択</string>

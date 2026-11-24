@@ -1,21 +1,17 @@
 package com.karasu256.karasulab.ui.component
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -38,22 +34,8 @@ class SettingsGroupScope {
 @Composable
 fun SettingsGroup(modifier: Modifier = Modifier, content: SettingsGroupScope.() -> Unit) {
     val entries = SettingsGroupScope().apply(content).entries
-    val outer = MaterialTheme.shapes.large
-    val inner = CornerSize(4.dp)
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        entries.forEachIndexed { index, entry ->
-            val first = index == 0
-            val last = index == entries.lastIndex
-            val shape = outer.copy(
-                bottomStart = if (last) outer.bottomStart else inner,
-                bottomEnd = if (last) outer.bottomEnd else inner,
-                topStart = if (first) outer.topStart else inner,
-                topEnd = if (first) outer.topEnd else inner,
-            )
-            Surface(shape = shape, color = MaterialTheme.colorScheme.surfaceContainer) {
-                entry()
-            }
-        }
+    Column(modifier = modifier.fillMaxWidth()) {
+        entries.forEach { entry -> entry() }
     }
 }
 
@@ -73,23 +55,21 @@ fun SectionHeader(text: String, modifier: Modifier = Modifier, action: (@Composa
     }
 }
 
-enum class Tone { Primary, Secondary, Tertiary, Error, Neutral }
+enum class Tone { Neutral, Primary, Error }
 
 @Composable
 fun IconTile(icon: ImageVector, tone: Tone = Tone.Neutral) {
     val colors = MaterialTheme.colorScheme
-    val (container, content) = when (tone) {
-        Tone.Primary -> colors.primaryContainer to colors.onPrimaryContainer
-        Tone.Secondary -> colors.secondaryContainer to colors.onSecondaryContainer
-        Tone.Tertiary -> colors.tertiaryContainer to colors.onTertiaryContainer
-        Tone.Error -> colors.errorContainer to colors.onErrorContainer
-        Tone.Neutral -> colors.surfaceContainerHighest to colors.onSurfaceVariant
-    }
-    Surface(shape = MaterialTheme.shapes.medium, color = container, contentColor = content, modifier = Modifier.size(40.dp)) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(22.dp))
-        }
-    }
+    Icon(
+        imageVector = icon,
+        contentDescription = null,
+        modifier = Modifier.size(24.dp),
+        tint = when (tone) {
+            Tone.Neutral -> colors.onSurfaceVariant
+            Tone.Primary -> colors.primary
+            Tone.Error -> colors.error
+        },
+    )
 }
 
 @Composable

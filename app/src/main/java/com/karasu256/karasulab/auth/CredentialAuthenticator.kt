@@ -42,20 +42,20 @@ class CredentialAuthenticator(private val activity: Activity) : CredentialProvid
         check(response is CreatePublicKeyCredentialResponse) { "Unexpected credential response: ${response.type}" }
         response.registrationResponseJson
     } catch (e: CreateCredentialCancellationException) {
-        Log.w("CredentialAuthenticator", e.type, e)
+        Log.e("CredentialAuthenticator", "Credential request cancelled: ${e.type}: ${e.errorMessage}", e)
         null
     } catch (e: CreateCredentialException) {
-        Log.e("CredentialAuthenticator", e.type, e)
+        Log.e("CredentialAuthenticator", "Credential request failed: ${e.type}: ${e.errorMessage}", e)
         throw e
     }
 
     private suspend fun request(option: CredentialOption): Credential? = try {
         credentialManager.getCredential(activity, GetCredentialRequest(listOf(option))).credential
     } catch (e: GetCredentialCancellationException) {
-        Log.w("CredentialAuthenticator", e.type, e)
+        Log.e("CredentialAuthenticator", "Credential request cancelled: ${e.type}: ${e.errorMessage}", e)
         null
     } catch (e: GetCredentialException) {
-        Log.e("CredentialAuthenticator", e.type, e)
+        Log.e("CredentialAuthenticator", "Credential request failed: ${e.type}: ${e.errorMessage}", e)
         throw e
     }
 }

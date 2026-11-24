@@ -1,5 +1,6 @@
 package com.karasu256.karasulab.data.auth
 
+import android.util.Log
 import com.karasu256.karasulab.data.local.AccountEntity
 import com.karasu256.karasulab.data.local.AuthTokenEntity
 import com.karasu256.karasulab.data.local.SessionStore
@@ -28,12 +29,22 @@ class SessionTokenExchanger @Inject constructor(
         val response = authApi.getSession(cookie.toHeader())
         if (response.code() in 401..403) {
             response.errorBody()?.close()
+            Log.e("SessionTokenExchanger", "get-session rejected the session cookie with ${response.code()}")
             return null
         }
         if (!response.isSuccessful) throw HttpException(response)
-        val body = response.body()?.use { it.string() } ?: return null
-        val user = json.decodeFromString<GetSessionResponse?>(body)?.user ?: return null
-        val customToken = response.headers()["set-auth-jwt"] ?: return null
+        val body = response.body()?.use { it.string() } ?: run {
+            Log.e("SessionTokenExchanger", "get-session returned an empty body")
+            return null
+        }
+        val user = json.decodeFromString<GetSessionResponse?>(body)?.user ?: run {
+            Log.e("SessionTokenExchanger", "get-session returned no user: $body")
+            return null
+        }
+        val customToken = response.headers()["set-auth-jwt"] ?: run {
+            Log.e("SessionTokenExchanger", "get-session returned no set-auth-jwt header: ${response.headers()}")
+            return null
+        }
         if (rejectKnown && store.account(user.id) != null) throw AccountAlreadySignedInException(cookie)
         val renewed = SessionCookie.from(response) ?: cookie
         val token = AuthTokenEntity(

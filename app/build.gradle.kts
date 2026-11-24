@@ -41,6 +41,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "API_HOST", "\"api.karasu256.com\"")
+        buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
     }
 
     signingConfigs {
@@ -68,13 +71,7 @@ android {
     }
 
     buildTypes {
-        debug {
-            buildConfigField("String", "API_HOST", "\"local-api.karasu256.com\"")
-            buildConfigField("String", "AUTH_HOST", "\"local-api-auth.karasu256.com\"")
-        }
         release {
-            buildConfigField("String", "API_HOST", "\"api.karasu256.com\"")
-            buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
             signingConfig = signingConfigs.findByName("release")
             optimization {
                 enable = false

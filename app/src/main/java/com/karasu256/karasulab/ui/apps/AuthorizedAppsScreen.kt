@@ -1,7 +1,9 @@
 package com.karasu256.karasulab.ui.apps
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -34,7 +36,6 @@ import com.karasu256.karasulab.ui.component.ConfirmDialog
 import com.karasu256.karasulab.ui.component.EmptyText
 import com.karasu256.karasulab.ui.component.ErrorRetry
 import com.karasu256.karasulab.ui.component.IconTile
-import com.karasu256.karasulab.ui.component.LoadingView
 import com.karasu256.karasulab.ui.component.SettingsGroup
 import com.karasu256.karasulab.ui.component.SettingsItem
 import com.karasu256.karasulab.ui.component.Tone
@@ -78,7 +79,7 @@ fun AuthorizedAppsScreen(
                         SettingsItem(
                             title = app.clientName ?: app.clientId,
                             description = formatDateTime(app.createdAt),
-                            leading = { IconTile(Icons.Filled.Apps, Tone.Tertiary) },
+                            leading = { IconTile(Icons.Filled.Apps, Tone.Neutral) },
                             trailing = {
                                 IconButton(onClick = { viewModel.askRevoke(app) }, enabled = state.revokingId != app.id) {
                                     if (state.revokingId == app.id) {
@@ -99,7 +100,12 @@ fun AuthorizedAppsScreen(
             ModalBottomSheet(onDismissRequest = viewModel::closeInfo) {
                 val detail = state.infoDetail
                 if (detail == null) {
-                    LoadingView(modifier = Modifier.padding(32.dp))
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(240.dp).navigationBarsPadding(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 } else {
                     AppInfo(detail = detail, name = app.clientName ?: app.clientId)
                 }

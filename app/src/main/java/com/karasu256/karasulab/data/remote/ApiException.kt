@@ -1,5 +1,6 @@
 package com.karasu256.karasulab.data.remote
 
+import android.util.Log
 import kotlinx.serialization.json.Json
 import okhttp3.ResponseBody
 import retrofit2.HttpException
@@ -9,16 +10,21 @@ class ApiException(
     val status: Int,
     val code: String?,
     message: String?,
-) : Exception(message)
+    cause: Throwable? = null,
+) : Exception("HTTP $status${code?.let { " $it" }.orEmpty()}: $message", cause)
 
 private val errorJson = Json { ignoreUnknownKeys = true }
 
 private fun parseErrorBody(raw: String?): ErrorBody? =
-    raw?.takeIf { it.isNotBlank() }?.let { runCatching { errorJson.decodeFromString<ErrorBody>(it) }.getOrNull() }
+    raw?.takeIf { it.isNotBlank() }?.let {
+        runCatching { errorJson.decodeFromString<ErrorBody>(it) }
+            .onFailure { error -> Log.e("ApiException", "Unreadable error body: $it", error) }
+            .getOrNull()
+    }
 
 fun HttpException.toApiException(): ApiException {
     val body = parseErrorBody(response()?.errorBody()?.use { it.string() })
-    return ApiException(code(), body?.code, body?.message ?: body?.error ?: message())
+    return ApiException(code(), body?.code, body?.message ?: body?.error ?: message(), this)
 }
 
 fun Response<ResponseBody>.ensureSuccess() {
@@ -38,6 +44,7 @@ suspend fun <T> attempt(block: suspend () -> T): Result<T> = try {
 } catch (e: kotlin.coroutines.cancellation.CancellationException) {
     throw e
 } catch (e: Exception) {
+    Log.e("Attempt", "Operation failed: $e", e)
     Result.failure(e)
 }
 

@@ -37,6 +37,7 @@ import com.karasu256.karasulab.auth.CredentialAuthenticator
 import com.karasu256.karasulab.ui.component.ConfirmDialog
 import com.karasu256.karasulab.ui.component.ErrorRetry
 import com.karasu256.karasulab.ui.component.IconTile
+import com.karasu256.karasulab.ui.component.MinecraftAvatar
 import com.karasu256.karasulab.ui.component.SettingsGroup
 import com.karasu256.karasulab.ui.component.SettingsItem
 import com.karasu256.karasulab.ui.component.Tone
@@ -60,7 +61,7 @@ fun LinkedAccountsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
-    val credentials = remember(activity) { activity?.let(::CredentialAuthenticator) }
+    val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
     val uriHandler = LocalUriHandler.current
     val snackbarHostState = remember { SnackbarHostState() }
     val message = state.message?.resolve()
@@ -96,12 +97,14 @@ fun LinkedAccountsScreen(
                             stringResource(R.string.connections_not_linked)
                         },
                         leading = {
-                            if (profile?.avatarUrl != null) {
+                            if (provider.id == "minecraft" && profile?.avatarUrl != null) {
+                                MinecraftAvatar(textureUrl = profile.avatarUrl)
+                            } else if (profile?.avatarUrl != null) {
                                 UserAvatar(id = provider.id, label = provider.label, imageUrl = profile.avatarUrl)
                             } else if (provider.id == "google") {
-                                IconTile(Icons.Filled.Public, Tone.Secondary)
+                                IconTile(Icons.Filled.Public, Tone.Neutral)
                             } else {
-                                IconTile(providerIcon(provider.id), Tone.Secondary)
+                                IconTile(providerIcon(provider.id), Tone.Neutral)
                             }
                         },
                         trailing = if (state.loading && state.profiles.isEmpty()) {
@@ -113,7 +116,7 @@ fun LinkedAccountsScreen(
                                         if (profile != null) {
                                             viewModel.askUnlink(provider)
                                         } else {
-                                            credentials?.let { viewModel.link(provider, it) }
+                                            viewModel.link(provider, credentials)
                                         }
                                     },
                                     enabled = !busy && state.busyProviderId == null && (profile == null || state.canUnlink),

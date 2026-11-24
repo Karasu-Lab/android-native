@@ -1,5 +1,6 @@
 package com.karasu256.karasulab.data
 
+import android.util.Log
 import com.karasu256.karasulab.data.auth.SessionTokenExchanger
 import com.karasu256.karasulab.data.local.AccountEntity
 import com.karasu256.karasulab.data.local.SessionStore
@@ -65,7 +66,8 @@ class AccountRepository @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("AccountRepository", "Could not revoke the session of ${account.id}", e)
         }
     }
 

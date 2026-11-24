@@ -81,31 +81,28 @@ fun SettingsScaffold(
     Scaffold(
         modifier = modifier,
         topBar = {
-            Column {
-                TopAppBar(
-                    title = { Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                    navigationIcon = {
-                        if (showBack) {
-                            IconButton(onClick = { navigator.popBackStack() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
-                            }
+            TopAppBar(
+                title = { Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                navigationIcon = {
+                    if (showBack) {
+                        IconButton(onClick = { navigator.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                         }
-                    },
-                    actions = {
-                        active?.let { account ->
-                            IconButton(onClick = { sheetOpen = true }) {
-                                UserAvatar(
-                                    id = account.id,
-                                    label = account.displayName,
-                                    imageUrl = account.image,
-                                    size = 32.dp,
-                                )
-                            }
+                    }
+                },
+                actions = {
+                    active?.let { account ->
+                        IconButton(onClick = { sheetOpen = true }) {
+                            UserAvatar(
+                                id = account.id,
+                                label = account.displayName,
+                                imageUrl = account.image,
+                                size = 32.dp,
+                            )
                         }
-                    },
-                )
-                BusyBar(active = loading)
-            }
+                    }
+                },
+            )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
@@ -120,11 +117,12 @@ fun SettingsScaffold(
                             .widthIn(max = 640.dp)
                             .fillMaxWidth()
                             .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 16.dp, vertical = 16.dp),
+                            .padding(vertical = 8.dp),
                         content = content,
                     )
                 }
             }
+            BusyBar(active = loading, modifier = Modifier.align(Alignment.TopCenter))
             when (menu.busy) {
                 AccountMenuBusy.SigningOut -> BusyOverlay(stringResource(R.string.settings_signing_out))
                 AccountMenuBusy.Switching -> BusyOverlay(stringResource(R.string.account_switching))

@@ -21,6 +21,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.karasu256.karasulab.ui.loading.LoadingScreen
+import com.karasu256.karasulab.ui.navigation.PushPopTransitions
 import com.karasu256.karasulab.ui.splash.SplashScreen
 import com.karasu256.karasulab.ui.theme.AppTheme
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -87,5 +88,6 @@ private fun AppContent(viewModel: MainViewModel) {
         navGraph = NavGraphs.root,
         start = start,
         navController = navController,
+        defaultTransitions = PushPopTransitions,
     )
 }

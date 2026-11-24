@@ -53,7 +53,7 @@ object AppModule {
     @AuthHttpClient
     fun provideAuthHttpClient(): OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(OriginInterceptor("https://${BuildConfig.AUTH_HOST}"))
-        .addNetworkInterceptor(HttpErrorLoggingInterceptor())
+        .addInterceptor(HttpErrorLoggingInterceptor())
         .build()
 
     @Provides
@@ -64,7 +64,7 @@ object AppModule {
         authenticator: CustomTokenAuthenticator,
     ): OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(interceptor)
-        .addNetworkInterceptor(HttpErrorLoggingInterceptor())
+        .addInterceptor(HttpErrorLoggingInterceptor())
         .authenticator(authenticator)
         .build()
 

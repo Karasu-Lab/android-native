@@ -52,7 +52,7 @@ fun SecurityScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
-    val credentials = remember(activity) { activity?.let(::CredentialAuthenticator) }
+    val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
     val snackbarHostState = remember { SnackbarHostState() }
     val message = state.message?.resolve()
     val settings = state.settings
@@ -88,7 +88,7 @@ fun SecurityScreen(
             SectionHeader(
                 text = stringResource(R.string.passkey_title),
                 action = {
-                    IconButton(onClick = { credentials?.let(viewModel::addPasskey) }, enabled = !state.registering && credentials != null) {
+                    IconButton(onClick = { viewModel.addPasskey(credentials) }, enabled = !state.registering) {
                         if (state.registering) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                         } else {
@@ -106,7 +106,7 @@ fun SecurityScreen(
                             SettingsItem(
                                 title = passkey.name ?: stringResource(R.string.passkey_unnamed),
                                 description = passkey.createdOn,
-                                leading = { IconTile(Icons.Filled.Fingerprint, Tone.Secondary) },
+                                leading = { IconTile(Icons.Filled.Fingerprint, Tone.Neutral) },
                                 trailing = {
                                     IconButton(
                                         onClick = { viewModel.askDeletePasskey(passkey) },

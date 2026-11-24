@@ -1,5 +1,6 @@
 package com.karasu256.karasulab.data
 
+import android.util.Log
 import com.karasu256.karasulab.data.auth.AccountAlreadySignedInException
 import com.karasu256.karasulab.data.auth.SessionTokenExchanger
 import com.karasu256.karasulab.data.local.SessionStore
@@ -45,7 +46,9 @@ class AuthRepository @Inject constructor(
             }
             response.code() == 429 -> {
                 val seconds = response.errorBody()?.use { body ->
-                    runCatching { json.decodeFromString<RateLimitBody>(body.string()).retryAfterSeconds }.getOrNull()
+                    runCatching { json.decodeFromString<RateLimitBody>(body.string()).retryAfterSeconds }
+                        .onFailure { Log.e("AuthRepository", "Unreadable rate limit body", it) }
+                        .getOrNull()
                 } ?: response.headers()["Retry-After"]?.toIntOrNull()?.takeIf { it > 0 } ?: 60
                 LookupOutcome.RateLimited(minutes = maxOf(1, (seconds + 59) / 60), exact = seconds % 60 == 0)
             }
@@ -61,7 +64,7 @@ class AuthRepository @Inject constructor(
     }
 
     suspend fun signInWithGoogle(idToken: String, rejectKnown: Boolean = false): SignInResult =
-        signIn(rejectKnown) {
+        signIn("Google", rejectKnown) {
             authApi.signInSocial(SocialSignInRequest(provider = "google", idToken = IdTokenPayload(idToken)))
         }
 
@@ -79,14 +82,17 @@ class AuthRepository @Inject constructor(
         expectedEmail: String? = null,
         rejectKnown: Boolean = false,
     ): SignInResult {
-        val result = signIn(rejectKnown) {
+        val result = signIn("Passkey", rejectKnown) {
             authApi.verifyPasskeyAuthentication(
                 cookie = challenge.cookieHeader,
                 body = PasskeyVerifyRequest(json.parseToJsonElement(responseJson)),
             )
         }
         if (result != SignInResult.Success || expectedEmail == null) return result
-        val account = store.currentAccount() ?: return SignInResult.Failed
+        val account = store.currentAccount() ?: run {
+            Log.e("AuthRepository", "No active account after the passkey sign-in")
+            return SignInResult.Failed
+        }
         if (account.email.equals(expectedEmail.trim(), ignoreCase = true)) return result
         revoke(SessionCookie(account.sessionCookieName, account.sessionCookieValue, account.sessionExpiresAtMs))
         store.removeAccount(account.id)
@@ -111,7 +117,8 @@ class AuthRepository @Inject constructor(
         }
     } catch (e: CancellationException) {
         throw e
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        Log.e("AuthRepository", "Could not start the email challenge: $e", e)
         ChallengeOutcome.Failed
     }
 
@@ -120,12 +127,15 @@ class AuthRepository @Inject constructor(
             authApi.verifyEmailOtp(challenge.cookieHeader, VerifyOtpRequest(otp.trim().uppercase()))
         } catch (e: CancellationException) {
             throw e
-        } catch (_: IOException) {
+        } catch (e: IOException) {
+            Log.e("AuthRepository", "Could not verify the email code: $e", e)
             return SignInResult.NetworkError
         }
         if (!response.isSuccessful) {
             val code = response.errorBody()?.use { body ->
-                runCatching { json.decodeFromString<ErrorBody>(body.string()).code }.getOrNull()
+                runCatching { json.decodeFromString<ErrorBody>(body.string()).code }
+                    .onFailure { Log.e("AuthRepository", "Unreadable email code error body", it) }
+                    .getOrNull()
             }
             return when (response.code()) {
                 400, 401, 429 -> if (code == "INVALID_OTP") SignInResult.InvalidCode else SignInResult.ExpiredCode
@@ -136,27 +146,41 @@ class AuthRepository @Inject constructor(
         return finish(response, rejectKnown)
     }
 
-    private suspend fun signIn(rejectKnown: Boolean, request: suspend () -> Response<ResponseBody>): SignInResult = try {
+    private suspend fun signIn(method: String, rejectKnown: Boolean, request: suspend () -> Response<ResponseBody>): SignInResult = try {
         val response = request()
         response.body()?.close()
         response.errorBody()?.close()
         when {
-            response.code() in 400..403 -> SignInResult.InvalidCredentials
-            !response.isSuccessful -> SignInResult.Failed
+            response.code() in 400..403 -> {
+                Log.e("AuthRepository", "$method sign-in was rejected with ${response.code()}")
+                SignInResult.InvalidCredentials
+            }
+            !response.isSuccessful -> {
+                Log.e("AuthRepository", "$method sign-in failed with ${response.code()}")
+                SignInResult.Failed
+            }
             else -> finish(response, rejectKnown)
         }
     } catch (e: CancellationException) {
         throw e
-    } catch (_: IOException) {
+    } catch (e: IOException) {
+        Log.e("AuthRepository", "$method sign-in failed on the network: $e", e)
         SignInResult.NetworkError
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        Log.e("AuthRepository", "$method sign-in failed: $e", e)
         SignInResult.Failed
     }
 
     private suspend fun finish(response: Response<ResponseBody>, rejectKnown: Boolean): SignInResult {
-        val cookie = SessionCookie.from(response) ?: return SignInResult.Failed
+        val cookie = SessionCookie.from(response) ?: run {
+            Log.e("AuthRepository", "The sign-in response set no session cookie: ${response.code()} ${response.headers()}")
+            return SignInResult.Failed
+        }
         return try {
-            exchanger.exchange(cookie, rejectKnown)?.let { SignInResult.Success } ?: SignInResult.Failed
+            exchanger.exchange(cookie, rejectKnown)?.let { SignInResult.Success } ?: run {
+                Log.e("AuthRepository", "The session could not be exchanged for a custom token")
+                SignInResult.Failed
+            }
         } catch (e: AccountAlreadySignedInException) {
             revoke(e.cookie)
             SignInResult.AccountAlreadySignedIn
@@ -171,7 +195,8 @@ class AuthRepository @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "Could not revoke the session: $e", e)
         }
     }
 }
