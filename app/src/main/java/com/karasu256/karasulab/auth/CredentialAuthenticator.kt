@@ -17,13 +17,13 @@ import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.karasu256.karasulab.BuildConfig
+import com.karasu256.karasulab.R
 
 class CredentialAuthenticator(private val activity: Activity) : CredentialProvider {
     private val credentialManager = CredentialManager.create(activity)
 
     override suspend fun requestGoogleIdToken(): String? {
-        val option = GetSignInWithGoogleOption.Builder(BuildConfig.GOOGLE_SERVER_CLIENT_ID).build()
+        val option = GetSignInWithGoogleOption.Builder(activity.getString(R.string.default_web_client_id)).build()
         val credential = request(option) ?: return null
         check(credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
             "Unexpected credential type: ${credential.type}"

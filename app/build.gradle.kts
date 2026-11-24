@@ -41,12 +41,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        buildConfigField(
-            "String",
-            "GOOGLE_SERVER_CLIENT_ID",
-            "\"${localProperties.getProperty("googleServerClientId", "")}\"",
-        )
     }
 
     signingConfigs {
