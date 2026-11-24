@@ -16,13 +16,60 @@ val localProperties = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 
-/** Returns the Gradle property [name], from the project's or the user's `gradle.properties`, or null when unset. */
 fun signingProperty(name: String): String? = providers.gradleProperty(name).orNull
 
-/** The keystore holding the `debug` and `release` keys, with a leading `~` expanded to the user's home directory. */
 val signingStoreFile: File? = signingProperty("signing.storeFile")
     ?.replaceFirst(Regex("^~"), Regex.escapeReplacement(System.getProperty("user.home")))
     ?.let(::file)
+    ?.takeIf { it.exists() }
+
+val signingStorePassword: String? = localProperties.getProperty("signing.storePassword")
+val signingDebugKeyPassword: String? = localProperties.getProperty("signing.debugKeyPassword")
+val signingReleaseKeyPassword: String? = localProperties.getProperty("signing.releaseKeyPassword")
+
+val gpgHome: File = listOfNotNull(System.getenv("GNUPGHOME")?.let(::File), rootProject.projectDir.resolve(".gpg"))
+    .firstOrNull { it.resolve("com.karasu256.karasulab.keystore.gpg").exists() }
+    ?: rootProject.projectDir.resolve(".gpg")
+
+fun gpgDecrypt(name: String, passphrase: String? = null): ByteArray? {
+    val encrypted = gpgHome.resolve(name).takeIf { it.exists() } ?: return null
+    val passphraseFile = passphrase?.let {
+        layout.buildDirectory.file("gpg-signing/passphrase").get().asFile.apply {
+            parentFile.mkdirs()
+            createNewFile()
+            setReadable(false, false)
+            setReadable(true, true)
+            writeText(it)
+        }
+    }
+    val exec = providers.exec {
+        val args = mutableListOf("gpg", "--homedir", gpgHome.path, "--batch", "--quiet")
+        if (passphraseFile != null) args += listOf("--pinentry-mode", "loopback", "--passphrase-file", passphraseFile.path)
+        commandLine(args + listOf("--decrypt", encrypted.path))
+        isIgnoreExitValue = true
+    }
+    val output = exec.standardOutput.asBytes.get()
+    val exitValue = exec.result.get().exitValue
+    passphraseFile?.delete()
+    if (exitValue == 0) return output
+    val message = "gpg failed to decrypt $name with GNUPGHOME=${gpgHome.path}"
+    check(System.getProperty("idea.sync.active") == "true") { message }
+    logger.warn("$message (IDE sync continues without the gpg signing key)")
+    return null
+}
+
+val gpgDebugPassword: String? = gpgDecrypt("com.karasu256.karasulab.password.gpg")
+    ?.toString(Charsets.UTF_8)
+    ?.trim()
+
+val gpgDebugKeystore: File? = gpgDebugPassword?.let {
+    gpgDecrypt("com.karasu256.karasulab.keystore.gpg", passphrase = it)?.let { bytes ->
+        layout.buildDirectory.file("gpg-signing/debug.keystore").get().asFile.also { file ->
+            file.parentFile.mkdirs()
+            file.writeBytes(bytes)
+        }
+    }
+}
 
 android {
     namespace = "com.karasu256.karasulab"
@@ -39,26 +86,35 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField(
-            "String",
-            "GOOGLE_SERVER_CLIENT_ID",
-            "\"${localProperties.getProperty("googleServerClientId", "")}\"",
-        )
+        buildConfigField("String", "API_HOST", "\"api.karasu256.com\"")
+        buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
     }
 
     signingConfigs {
-        if (signingStoreFile != null) {
-            getByName("debug") {
-                storeFile = signingStoreFile
-                storePassword = localProperties.getProperty("signing.storePassword")
+        getByName("debug") {
+            if (gpgDebugKeystore != null && gpgDebugPassword != null) {
+                storeFile = gpgDebugKeystore
+                storePassword = gpgDebugPassword
                 keyAlias = "debug"
-                keyPassword = localProperties.getProperty("signing.debugKeyPassword")
+                keyPassword = gpgDebugPassword
+            } else if (signingStoreFile != null && signingStorePassword != null && signingDebugKeyPassword != null) {
+                storeFile = signingStoreFile
+                storePassword = signingStorePassword
+                keyAlias = "debug"
+                keyPassword = signingDebugKeyPassword
+            } else {
+                storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
             }
+        }
+        if (signingStoreFile != null && signingStorePassword != null && signingReleaseKeyPassword != null) {
             create("release") {
                 storeFile = signingStoreFile
-                storePassword = localProperties.getProperty("signing.storePassword")
+                storePassword = signingStorePassword
                 keyAlias = "release"
-                keyPassword = localProperties.getProperty("signing.releaseKeyPassword")
+                keyPassword = signingReleaseKeyPassword
             }
         }
     }
@@ -95,6 +151,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.compose.destinations.core)

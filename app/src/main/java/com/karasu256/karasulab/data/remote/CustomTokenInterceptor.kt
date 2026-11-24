@@ -7,7 +7,6 @@ import okhttp3.Response
 import java.io.IOException
 import javax.inject.Inject
 
-/** Sends the stored custom token as a bearer token, re-exchanging it first when it has expired. */
 class CustomTokenInterceptor @Inject constructor(
     private val exchanger: SessionTokenExchanger,
 ) : Interceptor {
@@ -17,11 +16,9 @@ class CustomTokenInterceptor @Inject constructor(
     }
 }
 
-/** Returns a copy of this request carrying [token] as its bearer token. */
 internal fun okhttp3.Request.withBearer(token: String): okhttp3.Request =
     newBuilder().header("Authorization", "Bearer $token").build()
 
-/** Runs [block] on the calling OkHttp thread, surfacing every failure as an [IOException] so OkHttp reports it to the caller. */
 internal fun <T> blockingIo(block: suspend () -> T): T = try {
     runBlocking { block() }
 } catch (e: IOException) {

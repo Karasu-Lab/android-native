@@ -2,5 +2,34 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$/../.." vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../accounts.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../admin.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../api-admin.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../api-auth.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../api.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../apps.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../auth.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../cdn.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../cloudflared-config" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../cron-jobs" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../flags.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../git.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../karasu-bot" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../mc-auth.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../mcp.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../me.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../qr.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../sso.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../www.karasu256.com" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../packages/api-permissions" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../packages/challengetoken" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../packages/docker" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../packages/flags" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../packages/sdk" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../packages/sse" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../packages/types" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../packages/ui" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../packages/utils" vcs="Git" />
   </component>
 </project>

@@ -9,7 +9,6 @@ import com.karasu256.karasulab.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
-/** Initializes Firebase, then Authentication, Crashlytics and Analytics in that order. */
 class FirebaseInitializer @Inject constructor(
     @param:ApplicationContext private val context: Context,
 ) : IInitializable {

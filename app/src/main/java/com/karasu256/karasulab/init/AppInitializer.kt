@@ -5,7 +5,6 @@ import com.karasu256.karasulab.data.AuthRepository
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
-/** Initializes the app itself by reading the stored session, which decides the first screen. */
 class AppInitializer @Inject constructor(
     private val authRepository: AuthRepository,
 ) : IInitializable {

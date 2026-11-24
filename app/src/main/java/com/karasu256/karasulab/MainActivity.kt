@@ -7,7 +7,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -22,16 +21,16 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.karasu256.karasulab.ui.loading.LoadingScreen
+import com.karasu256.karasulab.ui.navigation.PushPopTransitions
 import com.karasu256.karasulab.ui.splash.SplashScreen
 import com.karasu256.karasulab.ui.theme.AppTheme
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
-import com.ramcosta.composedestinations.generated.destinations.HomeScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.AuthScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SignInScreenDestination
 import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
 import dagger.hilt.android.AndroidEntryPoint
 
-/** The app's single activity, hosting every screen in a Compose Destinations nav graph. */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
@@ -50,14 +49,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** The stages the app goes through on launch, in order. */
 private enum class LaunchPhase {
     Splash,
     Loading,
     Content,
 }
 
-/** Shows the splash screen, then the loading screen, then the app's first screen. */
 @Composable
 private fun LaunchFlow(viewModel: MainViewModel) {
     var phase by rememberSaveable { mutableStateOf(LaunchPhase.Splash) }
@@ -71,18 +68,17 @@ private fun LaunchFlow(viewModel: MainViewModel) {
     }
 }
 
-/** Starts at the home screen when signed in and at sign-in otherwise, and returns to sign-in whenever the session ends. */
 @Composable
 private fun AppContent(viewModel: MainViewModel) {
     val isSignedIn by viewModel.isSignedIn.collectAsStateWithLifecycle()
     val signedInAtLaunch = isSignedIn ?: return
-    val start = remember { if (signedInAtLaunch) HomeScreenDestination else AuthScreenDestination }
+    val start = remember { if (signedInAtLaunch) SettingsScreenDestination else SignInScreenDestination() }
     val navController = rememberNavController()
     val navigator = navController.rememberDestinationsNavigator()
 
     LaunchedEffect(isSignedIn) {
-        if (isSignedIn == false && navController.currentDestination?.route == HomeScreenDestination.route) {
-            navigator.navigate(AuthScreenDestination) {
+        if (isSignedIn == false && navController.currentDestination?.route != SignInScreenDestination.route) {
+            navigator.navigate(SignInScreenDestination()) {
                 popUpTo(NavGraphs.root) { inclusive = true }
             }
         }
@@ -90,8 +86,8 @@ private fun AppContent(viewModel: MainViewModel) {
 
     DestinationsNavHost(
         navGraph = NavGraphs.root,
-        modifier = Modifier.safeDrawingPadding(),
         start = start,
         navController = navController,
+        defaultTransitions = PushPopTransitions,
     )
 }

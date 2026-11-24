@@ -1,5 +1,6 @@
 package com.karasu256.karasulab.ui.theme
 
+import android.util.Log
 import com.karasu256.karasulab.R
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
@@ -31,7 +32,6 @@ val displayFontFamily = FontFamily(
     )
 )
 
-// Default Material 3 typography values
 val baseline = Typography()
 
 val AppTypography = Typography(
@@ -52,18 +52,14 @@ val AppTypography = Typography(
     labelSmall = baseline.labelSmall.copy(fontFamily = bodyFontFamily),
 )
 
-/**
- * Downloads and caches every font [AppTypography] uses, so screens render with them from their first frame.
- *
- * A font that fails to load is skipped, leaving its text on the system fallback.
- */
 suspend fun FontFamily.Resolver.preloadAppFonts() {
     listOf(displayFontFamily, bodyFontFamily).forEach { family ->
         try {
             preload(family)
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("Type", "Could not preload a font family", e)
         }
     }
 }

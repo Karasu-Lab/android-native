@@ -3,20 +3,22 @@ package com.karasu256.karasulab.data.remote
 import android.util.Log
 import okhttp3.Interceptor
 import okhttp3.Response
+import java.io.IOException
 
-/** Logs every unsuccessful HTTP response with its status and body, leaving the response itself untouched for the caller. */
 class HttpErrorLoggingInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val response = chain.proceed(chain.request())
+        val request = chain.request()
+        val response = try {
+            chain.proceed(request)
+        } catch (e: IOException) {
+            Log.e("HttpError", "${request.method} ${request.url} failed before a response: $e", e)
+            throw e
+        }
         if (!response.isSuccessful) {
-            val body = response.peekBody(MAX_LOGGED_BODY_BYTES).string()
-            Log.w(TAG, "${response.request.method} ${response.request.url} -> ${response.code} $body")
+            val body = response.peekBody(4_096L).string()
+            val sent = "cookie=${request.header("Cookie") != null} authorization=${request.header("Authorization") != null} origin=${request.header("Origin")}"
+            Log.e("HttpError", "${request.method} ${request.url} -> ${response.code} [$sent] $body")
         }
         return response
-    }
-
-    private companion object {
-        const val TAG = "HttpError"
-        const val MAX_LOGGED_BODY_BYTES = 4_096L
     }
 }
