@@ -72,17 +72,17 @@
     <string name="settings_signing_out">サインアウト中</string>
     <string name="account_add">別のアカウントを追加</string>
     <string name="account_remove">このデバイスからこのアカウントを削除</string>
-    <string name="account_switching">アカウントを切り替えています。</string>
+    <string name="account_switching">アカウントを切り替えています</string>
     <string name="account_switch_after_add">追加後にアカウントを切り替える</string>
     <string name="account_continue_to_sign_in">サインインへ進む</string>
     <string name="account_current">使用中</string>
-    <string name="account_switch_failed">アカウントを切り替えられませんでした。</string>
+    <string name="account_switch_failed">アカウントを切り替えられませんでした</string>
 
-    <string name="email_unverified_banner">メールアドレスが未確認です。</string>
+    <string name="email_unverified_banner">メールアドレスが未確認です</string>
     <string name="email_unverified_send">確認メールを送る</string>
-    <string name="email_unverified_sent">確認メールを送信しました。</string>
+    <string name="email_unverified_sent">確認メールを送信しました</string>
     <string name="email_unverified_rate_limited">確認メールの再送回数が上限に達しました。しばらくしてからお試しください。</string>
-    <string name="email_unverified_failed">確認メールを送信できませんでした。</string>
+    <string name="email_unverified_failed">確認メールを送信できませんでした</string>
 
     <string name="profile_title">プロフィール</string>
     <string name="profile_display_name">表示名</string>
@@ -94,7 +94,7 @@
     <string name="profile_delete_icon">アイコンを削除</string>
     <string name="profile_icon_changed">アイコンを変更しました</string>
     <string name="profile_upload_failed">アイコンのアップロードに失敗しました</string>
-    <string name="profile_saved">表示名を保存しました。</string>
+    <string name="profile_saved">表示名を保存しました</string>
 
     <string name="security_title">セキュリティ</string>
     <string name="security_password">パスワード</string>
@@ -103,13 +103,13 @@
     <string name="security_new_password">新しいパスワード</string>
     <string name="security_change_password">パスワードを変更</string>
     <string name="security_set_password">パスワードを設定</string>
-    <string name="security_password_changed">パスワードを変更しました。</string>
-    <string name="security_password_set">パスワードを設定しました。</string>
-    <string name="security_wrong_password">現在のパスワードが正しくありません。</string>
-    <string name="security_requires_recent_login">パスワードを変更するには再サインインが必要です。</string>
-    <string name="security_weak_password">パスワードが短すぎます。</string>
+    <string name="security_password_changed">パスワードを変更しました</string>
+    <string name="security_password_set">パスワードを設定しました</string>
+    <string name="security_wrong_password">現在のパスワードが正しくありません</string>
+    <string name="security_requires_recent_login">パスワードを変更するには再サインインが必要です</string>
+    <string name="security_weak_password">パスワードが短すぎます</string>
     <string name="passkey_title">パスキー</string>
-    <string name="passkey_none">パスキーが登録されていません。</string>
+    <string name="passkey_none">パスキーが登録されていません</string>
     <string name="passkey_unnamed">名前未設定</string>
     <string name="passkey_remove">パスキーを削除</string>
     <string name="passkey_remove_title">パスキーを削除しますか？</string>
@@ -117,23 +117,23 @@
     <string name="passkey_name">パスキー名</string>
     <string name="passkey_name_placeholder">例: Pixel 9、MacBook Pro</string>
     <string name="passkey_register">パスキーを登録</string>
-    <string name="passkey_registered">パスキーを登録しました。</string>
-    <string name="passkey_register_failed">パスキーを登録できませんでした。</string>
-    <string name="passkey_delete_failed">パスキーを削除できませんでした。</string>
+    <string name="passkey_registered">パスキーを登録しました</string>
+    <string name="passkey_register_failed">パスキーを登録できませんでした</string>
+    <string name="passkey_delete_failed">パスキーを削除できませんでした</string>
     <string name="danger_title">危険な操作</string>
     <string name="danger_delete_account">アカウントを削除</string>
     <string name="danger_confirm_password">パスワードで確認</string>
-    <string name="danger_reauth_required">削除前に再認証が必要です。</string>
+    <string name="danger_reauth_required">削除前に再認証が必要です</string>
 
     <string name="connections_title">アカウント連携</string>
     <string name="connections_link">連携</string>
     <string name="connections_unlink">解除</string>
     <string name="connections_not_linked">連携されていません</string>
-    <string name="connections_cannot_unlink">最後のサインイン方法は解除できません。</string>
-    <string name="connections_cannot_unlink_current">現在のセッションでサインインしている連携は解除できません。</string>
+    <string name="connections_cannot_unlink">最後のサインイン方法は解除できません</string>
+    <string name="connections_cannot_unlink_current">現在のセッションでサインインしている連携は解除できません</string>
     <string name="connections_unlink_title">連携を解除しますか</string>
     <string name="connections_unlink_description">%1$s の連携を解除します。</string>
-    <string name="connections_linked">%1$s を連携しました。</string>
+    <string name="connections_linked">%1$s を連携しました</string>
     <string name="connections_link_failed">連携に失敗しました。もう一度お試しください。</string>
     <string name="connections_open_in_browser">ブラウザで連携</string>
 
