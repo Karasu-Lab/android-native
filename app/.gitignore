@@ -2,7 +2,5 @@
 
 .keystore
 
-/release
-/debug
-
-*.apk
+release/
+debug/
