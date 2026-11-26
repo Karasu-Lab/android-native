@@ -26,10 +26,9 @@ jobs:
         uses: actions/checkout@v7
       - name: Prepare Android signing key
         env:
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
         run: |
-          printf '%s\n' "$SIGNING_KEY" > ./.keystore.gpg
+          echo '${{ secrets.SIGNING_KEY }}' > ./.keystore.gpg
           gpg --batch --yes --passphrase "$SIGNING_PASS" -o ./.keystore --decrypt ./.keystore.gpg
           rm -f ./.keystore.gpg
           echo "signing.storePassword=$SIGNING_PASS" >> ./local.properties
