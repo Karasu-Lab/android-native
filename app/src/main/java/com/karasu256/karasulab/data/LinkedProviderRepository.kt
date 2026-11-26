@@ -1,5 +1,6 @@
 package com.karasu256.karasulab.data
 
+import android.util.Log
 import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.data.auth.ActiveSessionCookie
 import com.karasu256.karasulab.data.auth.SessionTokenExchanger
@@ -22,16 +23,24 @@ import javax.inject.Singleton
 @Singleton
 class LinkedProviderRepository @Inject constructor(
     private val authApi: AuthApi,
+    private val accountRepository: AccountRepository,
     private val sessionCookie: ActiveSessionCookie,
     private val exchanger: SessionTokenExchanger,
     private val json: Json,
 ) {
-    suspend fun profiles(): Map<String, ProviderProfile?> =
-        apiCall { authApi.linkedProviders(sessionCookie.header()) }.mapValues { (_, value) ->
+    suspend fun profiles(): Map<String, ProviderProfile?> {
+        val userId = accountRepository.activeAccountId()
+        return apiCall { authApi.linkedProviders(sessionCookie.header()) }.mapValues { (providerId, value) ->
             (value as? JsonObject)?.takeIf { it.isNotEmpty() }
                 ?.let { json.decodeFromJsonElement<ProviderProfileResponse>(it) }
-                ?.let { ProviderProfile(it.name, it.email, it.accountId, it.avatarUrl) }
+                ?.let { ProviderProfile(it.name, it.email, it.accountId, avatarUrl(userId, providerId, it.avatarUrl)) }
         }
+    }
+
+    private fun avatarUrl(userId: String?, providerId: String, served: String?): String? {
+        if (served == null || providerId == "minecraft" || userId == null) return served
+        return "${BuildConfig.CDN_URL}u/profiles/$userId/avatars/$providerId/avatar.png"
+    }
 
     suspend fun linkGoogle(idToken: String) {
         authApi.linkSocial(
@@ -54,7 +63,8 @@ class LinkedProviderRepository @Inject constructor(
     }
 
     suspend fun unlink(providerId: String) {
-        authApi.unlinkAccount(sessionCookie.header(), UnlinkAccountRequest(providerId))
-            .ensureSuccess()
+        runCatching {
+            authApi.unlinkAccount(sessionCookie.header(), UnlinkAccountRequest(providerId)).ensureSuccess()
+        }.onFailure { Log.e("LinkedProviderRepository", "Unlinking $providerId failed", it) }.getOrThrow()
     }
 }

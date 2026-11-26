@@ -153,11 +153,11 @@ class LinkedAccountsViewModel @Inject constructor(
         _uiState.update { it.copy(unlinkTarget = null, busyProviderId = provider.id) }
         viewModelScope.launch {
             attempt { linkedProviderRepository.unlink(provider.id) }
-                .onSuccess { _uiState.update { it.copy(profiles = it.profiles + (provider.id to null)) } }
                 .onFailure { error ->
                     Log.e("LinkedAccountsViewModel", "Unlinking ${provider.id} failed", error)
                     _uiState.update { it.copy(message = UiText(R.string.error_unknown)) }
                 }
+            refreshProvider(provider.id)
             _uiState.update { it.copy(busyProviderId = null) }
         }
     }

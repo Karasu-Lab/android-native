@@ -125,6 +125,7 @@ android {
             buildConfigField("String", "ACCOUNTS_HOST", "\"dev-accounts.karasu256.com\"")
             buildConfigField("String", "COOKIE_PREFIX", "\"preview\"")
             buildConfigField("String", "MC_AUTH_HOST", "\"dev-mc-auth.karasu256.com\"")
+            buildConfigField("String", "CDN_URL", "\"https://dev-cdn.karasu256.com/\"")
             manifestPlaceholders["accountsHost"] = "dev-accounts.karasu256.com"
             manifestPlaceholders["accountsWildcardHost"] = "*.dev-accounts.karasu256.com"
         }
@@ -133,6 +134,7 @@ android {
             buildConfigField("String", "ACCOUNTS_HOST", "\"accounts.karasu256.com\"")
             buildConfigField("String", "COOKIE_PREFIX", "\"production\"")
             buildConfigField("String", "MC_AUTH_HOST", "\"mc-auth.karasu256.com\"")
+            buildConfigField("String", "CDN_URL", "\"https://cdn.karasu256.com/\"")
             manifestPlaceholders["accountsHost"] = "accounts.karasu256.com"
             manifestPlaceholders["accountsWildcardHost"] = "accounts.karasu256.com"
             signingConfig = signingConfigs.findByName("release")
