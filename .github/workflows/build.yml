@@ -29,10 +29,9 @@ jobs:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
         run: |
-          $SIGNING_KEY | base64 -d >> ./.keystore
-          echo "$SIGNING_STORE_PASS=`pwd`/release-application-key" >> ./local.properties
-          echo "$SIGNING_KEY_PASS=`pwd`/release-application-key" >> ./local.properties
-          echo "$ALIAS=android" >> ./local.properties
+          echo "$SIGNING_KEY" | base64 -d > ./.keystore
+          echo "signing.storePassword=$SIGNING_PASS" >> ./local.properties
+          echo "signing.keyPassword=$SIGNING_PASS" >> ./local.properties
       - name: Set up Java
         uses: actions/setup-java@v6
         with:
