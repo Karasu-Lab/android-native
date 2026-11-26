@@ -28,7 +28,7 @@ jobs:
         env:
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
         run: |
-          tr -d ' \n\r' <<< '${{ secrets.SIGNING_KEY }}' | base64 -d | gpg --decrypt --batch --passphrase "${SIGNING_PASS}" > ./.keystore
+          tr -d ' \n\r' <<< '${{ secrets.SIGNING_KEY }}' | base64 -d > ./.keystore
           {
             echo "signing.storePassword=${SIGNING_PASS}"
             echo "signing.keyPassword=${SIGNING_PASS}"
