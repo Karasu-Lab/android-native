@@ -1,5 +1,6 @@
 package com.karasu256.karasulab.data.remote
 
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -9,10 +10,24 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Url
 
 interface AuthApi {
     @POST("api/auth/sign-in/social")
     suspend fun signInSocial(@Body body: SocialSignInRequest): Response<ResponseBody>
+
+    @POST("api/auth/link-social")
+    suspend fun linkSocialRedirect(
+        @Header("Cookie") cookie: String,
+        @Body body: LinkSocialRedirectRequest,
+    ): Response<ResponseBody>
+
+    @GET
+    suspend fun verifyMinecraft(
+        @Url url: String,
+        @Header("Cookie") cookie: String,
+        @Query("code") code: String,
+    ): Response<ResponseBody>
 
     @POST("api/auth/one-time-token/verify")
     suspend fun verifyOneTimeToken(
@@ -126,7 +141,7 @@ interface AuthApi {
     ): Response<ResponseBody>
 
     @GET("api/users/me/providers")
-    suspend fun linkedProviders(@Header("Cookie") cookie: String): Map<String, ProviderProfileResponse?>
+    suspend fun linkedProviders(@Header("Cookie") cookie: String): Map<String, JsonElement>
 
     @POST("api/auth/unlink-account")
     suspend fun unlinkAccount(

@@ -1,5 +1,8 @@
 package com.karasu256.karasulab.data.remote
 
+import com.karasu256.karasulab.data.auth.OAuthCallback
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
@@ -7,6 +10,19 @@ import kotlinx.serialization.json.JsonElement
 data class SocialSignInRequest(
     val provider: String,
     val idToken: IdTokenPayload,
+)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class LinkSocialRedirectRequest(
+    val provider: String,
+    @EncodeDefault val callbackURL: String = OAuthCallback.url,
+    @EncodeDefault val errorCallbackURL: String = callbackURL,
+)
+
+@Serializable
+data class SocialRedirectResponse(
+    val url: String? = null,
 )
 
 @Serializable

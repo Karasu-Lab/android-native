@@ -3,12 +3,12 @@ package com.karasu256.karasulab.ui.linking
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.R
 import com.karasu256.karasulab.auth.CredentialProvider
 import com.karasu256.karasulab.data.LinkedProviderRepository
 import com.karasu256.karasulab.data.ProviderProfile
 import com.karasu256.karasulab.data.SecurityRepository
+import com.karasu256.karasulab.data.remote.ApiException
 import com.karasu256.karasulab.data.remote.attempt
 import com.karasu256.karasulab.ui.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,6 +40,8 @@ data class LinkedAccountsUiState(
     val hasPassword: Boolean = false,
     val busyProviderId: String? = null,
     val unlinkTarget: LinkProvider? = null,
+    val minecraftDialog: Boolean = false,
+    val minecraftError: UiText? = null,
     val message: UiText? = null,
 ) {
     val linkedCount: Int get() = profiles.values.count { it != null }
@@ -87,27 +89,58 @@ class LinkedAccountsViewModel @Inject constructor(
 
     fun link(provider: LinkProvider, credentials: CredentialProvider) {
         if (_uiState.value.busyProviderId != null) return
-        if (provider.id != "google") {
-            _openBrowser.trySend("https://${BuildConfig.ACCOUNTS_HOST}/settings/linking")
+        if (provider.id == "minecraft") {
+            _uiState.update { it.copy(minecraftDialog = true, minecraftError = null) }
             return
         }
         _uiState.update { it.copy(busyProviderId = provider.id) }
         viewModelScope.launch {
             val result = attempt {
-                val idToken = credentials.requestGoogleIdToken() ?: return@attempt false
-                linkedProviderRepository.linkGoogle(idToken)
-                true
+                if (provider.id == "google") {
+                    val idToken = credentials.requestGoogleIdToken() ?: return@attempt false
+                    linkedProviderRepository.linkGoogle(idToken)
+                    true
+                } else {
+                    _openBrowser.send(linkedProviderRepository.linkUrl(provider.id))
+                    false
+                }
             }
             result.onSuccess { linked ->
-                if (linked) _uiState.update { it.copy(message = UiText(R.string.connections_linked, listOf(provider.label))) }
+                if (linked) linkSucceeded(provider)
             }.onFailure { error ->
                 Log.e("LinkedAccountsViewModel", "Linking ${provider.id} failed", error)
-                _uiState.update { it.copy(message = UiText(R.string.connections_link_failed)) }
+                linkFailed()
             }
             refreshProvider(provider.id)
             _uiState.update { it.copy(busyProviderId = null) }
         }
     }
+
+    fun dismissMinecraft() = _uiState.update { it.copy(minecraftDialog = false, minecraftError = null) }
+
+    fun verifyMinecraft(code: String) {
+        val provider = linkProviders.first { it.id == "minecraft" }
+        _uiState.update { it.copy(busyProviderId = provider.id, minecraftError = null) }
+        viewModelScope.launch {
+            attempt { linkedProviderRepository.verifyMinecraft(code) }
+                .onSuccess {
+                    _uiState.update { it.copy(minecraftDialog = false) }
+                    linkSucceeded(provider)
+                    refreshProvider(provider.id)
+                }
+                .onFailure { error ->
+                    Log.e("LinkedAccountsViewModel", "Verifying the Minecraft code failed", error)
+                    val message = if ((error as? ApiException)?.status == 409) R.string.minecraft_already_linked else R.string.minecraft_verify_failed
+                    _uiState.update { it.copy(minecraftError = UiText(message)) }
+                }
+            _uiState.update { it.copy(busyProviderId = null) }
+        }
+    }
+
+    private fun linkFailed() = _uiState.update { it.copy(message = UiText(R.string.connections_link_failed)) }
+
+    private fun linkSucceeded(provider: LinkProvider) =
+        _uiState.update { it.copy(message = UiText(R.string.connections_linked, listOf(provider.label))) }
 
     fun askUnlink(provider: LinkProvider) = _uiState.update { it.copy(unlinkTarget = provider) }
 

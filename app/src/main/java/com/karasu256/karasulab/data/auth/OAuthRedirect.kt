@@ -16,6 +16,8 @@ import javax.inject.Singleton
 object OAuthCallback {
     private const val PATH = "/auth/app/callback"
 
+    val url: String get() = "https://${BuildConfig.ACCOUNTS_HOST}$PATH"
+
     fun matches(uri: Uri): Boolean =
         uri.scheme == "https" && uri.host?.endsWith(BuildConfig.ACCOUNTS_HOST) == true && uri.path?.startsWith(
             PATH

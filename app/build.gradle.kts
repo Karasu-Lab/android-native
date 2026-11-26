@@ -123,6 +123,7 @@ android {
             buildConfigField("String", "AUTH_HOST", "\"dev-api-auth.karasu256.com\"")
             buildConfigField("String", "ACCOUNTS_HOST", "\"dev-accounts.karasu256.com\"")
             buildConfigField("String", "COOKIE_PREFIX", "\"preview\"")
+            buildConfigField("String", "MC_AUTH_HOST", "\"dev-mc-auth.karasu256.com\"")
             manifestPlaceholders["accountsHost"] = "dev-accounts.karasu256.com"
             manifestPlaceholders["accountsWildcardHost"] = "*.dev-accounts.karasu256.com"
         }
@@ -130,6 +131,7 @@ android {
             buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
             buildConfigField("String", "ACCOUNTS_HOST", "\"accounts.karasu256.com\"")
             buildConfigField("String", "COOKIE_PREFIX", "\"production\"")
+            buildConfigField("String", "MC_AUTH_HOST", "\"mc-auth.karasu256.com\"")
             manifestPlaceholders["accountsHost"] = "accounts.karasu256.com"
             manifestPlaceholders["accountsWildcardHost"] = "accounts.karasu256.com"
             signingConfig = signingConfigs.findByName("release")
@@ -155,6 +157,7 @@ room {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.browser)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.text.google.fonts)

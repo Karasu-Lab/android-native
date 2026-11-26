@@ -1,13 +1,21 @@
 package com.karasu256.karasulab.data
 
+import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.data.auth.ActiveSessionCookie
 import com.karasu256.karasulab.data.auth.SessionTokenExchanger
 import com.karasu256.karasulab.data.remote.AuthApi
 import com.karasu256.karasulab.data.remote.IdTokenPayload
+import com.karasu256.karasulab.data.remote.LinkSocialRedirectRequest
 import com.karasu256.karasulab.data.remote.LinkSocialRequest
+import com.karasu256.karasulab.data.remote.ProviderProfileResponse
+import com.karasu256.karasulab.data.remote.SocialRedirectResponse
 import com.karasu256.karasulab.data.remote.UnlinkAccountRequest
 import com.karasu256.karasulab.data.remote.apiCall
+import com.karasu256.karasulab.data.remote.bodyString
 import com.karasu256.karasulab.data.remote.ensureSuccess
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -16,10 +24,13 @@ class LinkedProviderRepository @Inject constructor(
     private val authApi: AuthApi,
     private val sessionCookie: ActiveSessionCookie,
     private val exchanger: SessionTokenExchanger,
+    private val json: Json,
 ) {
     suspend fun profiles(): Map<String, ProviderProfile?> =
-        apiCall { authApi.linkedProviders(sessionCookie.header()) }.mapValues { (_, profile) ->
-            profile?.let { ProviderProfile(it.name, it.email, it.accountId, it.avatarUrl) }
+        apiCall { authApi.linkedProviders(sessionCookie.header()) }.mapValues { (_, value) ->
+            (value as? JsonObject)?.takeIf { it.isNotEmpty() }
+                ?.let { json.decodeFromJsonElement<ProviderProfileResponse>(it) }
+                ?.let { ProviderProfile(it.name, it.email, it.accountId, it.avatarUrl) }
         }
 
     suspend fun linkGoogle(idToken: String) {
@@ -28,6 +39,18 @@ class LinkedProviderRepository @Inject constructor(
             LinkSocialRequest("google", IdTokenPayload(idToken))
         ).ensureSuccess()
         exchanger.reexchange(staleToken = null)
+    }
+
+    suspend fun linkUrl(providerId: String): String {
+        if (providerId == "xbox") return "https://${BuildConfig.AUTH_HOST}/api/xbox/link"
+        val response = authApi.linkSocialRedirect(sessionCookie.header(), LinkSocialRedirectRequest(providerId))
+        if (!response.isSuccessful) response.ensureSuccess()
+        return json.decodeFromString<SocialRedirectResponse>(response.bodyString()).url
+            ?: error("The $providerId link URL was not returned")
+    }
+
+    suspend fun verifyMinecraft(code: String) {
+        authApi.verifyMinecraft("https://${BuildConfig.MC_AUTH_HOST}/api/mc/verify", sessionCookie.header(), code).ensureSuccess()
     }
 
     suspend fun unlink(providerId: String) {
