@@ -10,7 +10,10 @@ Native Android app for Karasu Lab.
 | `ANDROID_HOME` or `ANDROID_SDK_ROOT` | Yes | Android SDK root. Install Android SDK Platform 37.0, Android SDK Build-Tools 37.0.0, and Platform-Tools. |
 | `GNUPGHOME` | No | GPG home directory containing local encrypted signing files. Defaults to the repository's `.gpg` directory. Signing is optional. |
 | `PINENTRY_PROGRAM` | No | Path to a pinentry executable for the GPG agent. The Nix development shell sets this automatically. |
-| `SIGNING_KEY` | No | Path to the local release keystore. For GitHub Actions, this secret contains the base64-encoded release keystore; the workflow decodes it and writes it to `.keystore`. |
+| `SIGNING_KEY_BASE64` | No | Base64-encoded release keystore for GitHub Actions. The workflow decodes it and writes it to `.keystore`. |
+| `SIGNING_STORE_PASSWORD` | No | Release keystore store password. |
+| `SIGNING_KEY_PASSWORD` | No | Release key password. |
+| `ALIAS` | No | Release key alias. |
 | `SIGNING_PASS` | No | Release keystore and key password. Set with `SIGNING_KEY`; in GitHub Actions, configure it as an environment secret. |
 
 Without signing material, debug builds use the standard Android debug key and
@@ -54,11 +57,10 @@ Gradle property and the `signing.storePassword`, `signing.debugKeyPassword`,
 and `signing.releaseKeyPassword` properties in the untracked `local.properties`
 file.
 
-For signed GitHub Actions builds, configure `SIGNING_KEY` (the base64-encoded
-release keystore) and `SIGNING_PASS` (the keystore/key password) as environment
-secrets in both `preview` and
-`production`. Same-repository pull requests use `preview`; pushes to the
-default branch use `production`. The workflow decodes `SIGNING_KEY` and places
+For signed GitHub Actions builds, configure `SIGNING_KEY_BASE64` (the base64-encoded
+release keystore), `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_PASSWORD`, and `ALIAS`
+as environment secrets in both `preview` and `production`. Same-repository pull requests use `preview`; pushes to the
+default branch use `production`. The workflow decodes `SIGNING_KEY_BASE64` and places
 it at the project root as `.keystore`. When neither secret is configured, the
 signed job is skipped; a partially configured set
 fails and reports the missing secret name. Fork pull requests do not receive

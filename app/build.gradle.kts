@@ -47,13 +47,28 @@ android {
                     if (file.exists()) file.inputStream().use { load(it) }
                 }
                 storePassword = props["signing.storePassword"]?.toString()
+                    ?: props["SIGNING_STORE_PASSWORD"]?.toString()
                     ?: localProperties["signing.storePassword"]?.toString()
-                keyAlias = props["signing.keyAlias"]?.toString()
-                    ?: localProperties["signing.keyAlias"]?.toString() ?: "release"
+                    ?: localProperties["SIGNING_STORE_PASSWORD"]?.toString()
+
+                keyAlias = props["SIGNING_ALIAS"]?.toString()
+                    ?: props["signing.Alias"]?.toString()
+                    ?: props["ALIAS"]?.toString()
+                    ?: props["signing.keyAlias"]?.toString()
+                    ?: localProperties["SIGNING_ALIAS"]?.toString()
+                    ?: localProperties["signing.Alias"]?.toString()
+                    ?: localProperties["ALIAS"]?.toString()
+                    ?: localProperties["signing.keyAlias"]?.toString()
+                    ?: "release"
+
                 keyPassword = props["signing.keyPassword"]?.toString()
+                    ?: props["SIGNING_KEY_PASSWORD"]?.toString()
                     ?: props["signing.storePassword"]?.toString()
-                            ?: localProperties["signing.keyPassword"]?.toString()
-                            ?: localProperties["signing.storePassword"]?.toString()
+                    ?: props["SIGNING_STORE_PASSWORD"]?.toString()
+                    ?: localProperties["signing.keyPassword"]?.toString()
+                    ?: localProperties["SIGNING_KEY_PASSWORD"]?.toString()
+                    ?: localProperties["signing.storePassword"]?.toString()
+                    ?: localProperties["SIGNING_STORE_PASSWORD"]?.toString()
             }
         }
     }

@@ -27,14 +27,21 @@ jobs:
       - name: Prepare Android signing key
         env:
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_ALIAS: ${{ secrets.SIGNING_ALIAS }}
+          ALIAS: ${{ secrets.ALIAS }}
         run: |
-          tr -d ' \n\r' <<< '${{ secrets.SIGNING_KEY }}' | base64 -d > ./.keystore
+          tr -d ' \n\r' <<< '${{ secrets.SIGNING_KEY_BASE64 || secrets.SIGNING_KEY }}' | base64 -d > ./.keystore
+          STORE_PASS=$(tr -d '\n\r' <<< "${SIGNING_STORE_PASSWORD:-$SIGNING_PASS}")
+          KEY_PASS=$(tr -d '\n\r' <<< "${SIGNING_KEY_PASSWORD:-$STORE_PASS}")
+          KEY_ALIAS=$(tr -d '\n\r' <<< "${SIGNING_ALIAS:-${ALIAS:-release}}")
           {
-            echo "signing.storePassword=$(tr -d '\n\r' <<< "${SIGNING_PASS}")"
-            echo "signing.keyPassword=$(tr -d '\n\r' <<< "${SIGNING_PASS}")"
-            echo "signing.keyAlias=release"
+            echo "signing.storePassword=${STORE_PASS}"
+            echo "signing.keyPassword=${KEY_PASS}"
+            echo "signing.Alias=${KEY_ALIAS}"
           } > ./local.properties
-          keytool -list -v -keystore ./.keystore -storepass "$(tr -d '\n\r' <<< "${SIGNING_PASS}")"
+          keytool -list -v -keystore ./.keystore -storepass "${STORE_PASS}"
       - name: Set up Java
         uses: actions/setup-java@v6
         with:
