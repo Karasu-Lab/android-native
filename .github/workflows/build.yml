@@ -102,3 +102,30 @@ jobs:
             app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
+
+  google-play-release:
+    name: Release to Google Play
+    needs: android-signed
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Download signed release bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-signed-${{ github.sha }}
+          path: app/build/outputs/bundle/release/
+      - name: Decode Google Play Service Account Key
+        env:
+          IAM_PRIVATE_KEY: ${{ secrets.IAM_PRIVATE_KEY }}
+        run: |
+          tr -d ' \n\r' <<< '${{ secrets.IAM_PRIVATE_KEY }}' | base64 -d > ./service-account.json
+      - name: Publish to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          service-account-json: ./service-account.json
+          package-name: com.karasu256.karasulab
+          releaseFiles: app/build/outputs/bundle/release/*.aab
+          track: ${{ github.event_name == 'pull_request' && 'internal' || 'production' }}
