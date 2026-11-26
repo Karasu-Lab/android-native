@@ -133,6 +133,7 @@ data class ErrorBody(
     val code: String? = null,
     val message: String? = null,
     val error: String? = null,
+    val reason: String? = null,
 )
 
 @Serializable
