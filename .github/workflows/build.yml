@@ -26,7 +26,13 @@ jobs:
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
           GNUPGHOME: ${{ runner.temp }}/android-gnupg
         run: |
+          if [ "$GITHUB_EVENT_NAME" != "push" ] || [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Signing secrets are only used by builds of the main branch; this build will be unsigned."
+            exit 0
+          fi
+
           configured=0
+          missing=()
           for value in \
             "$ANDROID_GPG_PRIVATE_KEY" \
             "$ANDROID_GPG_PASSPHRASE" \
@@ -37,19 +43,19 @@ jobs:
             fi
           done
 
+          [ -n "$ANDROID_GPG_PRIVATE_KEY" ] || missing+=("ANDROID_GPG_PRIVATE_KEY")
+          [ -n "$ANDROID_GPG_PASSPHRASE" ] || missing+=("ANDROID_GPG_PASSPHRASE")
+          [ -n "$ANDROID_SIGNING_KEYSTORE_GPG" ] || missing+=("ANDROID_SIGNING_KEYSTORE_GPG")
+          [ -n "$SIGNING_PASS" ] || missing+=("SIGNING_PASS")
+
           if [ "$configured" -eq 0 ]; then
             echo "Signing secrets are not configured; release artifacts will be unsigned."
             exit 0
           fi
 
           if [ "$configured" -ne 4 ]; then
-            echo "::error::Configure all Android signing secrets, or leave all of them unset."
+            echo "::error::Configure all required Android signing secrets. Missing: ${missing[*]}."
             exit 1
-          fi
-
-          if [ "$GITHUB_EVENT_NAME" = "pull_request" ] || [ "$GITHUB_REF" != "refs/heads/main" ]; then
-            echo "Signing secrets are only used by builds of the main branch; this build will be unsigned."
-            exit 0
           fi
 
           install -d -m 700 "$GNUPGHOME"

@@ -54,8 +54,12 @@ Gradle property and the `signing.storePassword`, `signing.debugKeyPassword`,
 and `signing.releaseKeyPassword` properties in the untracked `local.properties`
 file.
 
-The GitHub Actions workflow also requires the `ANDROID_GPG_PRIVATE_KEY`,
-`ANDROID_GPG_PASSPHRASE`, and `ANDROID_SIGNING_KEYSTORE_GPG` secrets to decrypt
-the release keystore. When none of the signing secrets are configured, release
-artifacts are built unsigned. Partially configured signing secrets fail the
-signing job.
+For signed GitHub Actions builds, configure these repository or organization
+Actions secrets: `ANDROID_GPG_PRIVATE_KEY` (the armored GPG private key),
+`ANDROID_GPG_PASSPHRASE` (its passphrase), `ANDROID_SIGNING_KEYSTORE_GPG` (the
+encrypted release keystore), and `SIGNING_PASS` (the keystore and key
+password). `SIGNING_KEY` is set by the workflow to the decrypted keystore path;
+it is not a secret that needs to be configured. When none of the signing
+secrets are configured, release artifacts are built unsigned. A partially
+configured set fails the main-branch signing job and reports which secret
+names are missing. Pull request and non-main builds remain unsigned.
