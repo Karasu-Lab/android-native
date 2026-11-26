@@ -39,10 +39,13 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = rootProject.file(".keystore")
-            storePassword = localProperties["signing.storePassword"]?.toString()
-            keyAlias = "android"
-            keyPassword = localProperties["signing.keyPassword"]?.toString()
+            val keystoreFile = rootProject.file(".keystore")
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = localProperties["signing.storePassword"]?.toString()
+                keyAlias = "android"
+                keyPassword = localProperties["signing.keyPassword"]?.toString()
+            }
         }
     }
 
@@ -65,7 +68,10 @@ android {
             buildConfigField("String", "CDN_URL", "\"https://cdn.karasu256.com/\"")
             manifestPlaceholders["accountsHost"] = "accounts.karasu256.com"
             manifestPlaceholders["accountsWildcardHost"] = "accounts.karasu256.com"
-            signingConfig = signingConfigs.findByName("release")
+            val keystoreFile = rootProject.file(".keystore")
+            if (keystoreFile.exists()) {
+                signingConfig = signingConfigs.findByName("release")
+            }
             optimization {
                 enable = false
             }
