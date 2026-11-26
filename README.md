@@ -11,7 +11,7 @@ Native Android app for Karasu Lab.
 | `GNUPGHOME` | No | GPG home directory containing local encrypted signing files. Defaults to the repository's `.gpg` directory. Signing is optional. |
 | `PINENTRY_PROGRAM` | No | Path to a pinentry executable for the GPG agent. The Nix development shell sets this automatically. |
 | `SIGNING_KEY` | No | Path to the local release keystore. For GitHub Actions, this secret contains the OpenPGP-encrypted keystore; the workflow decrypts it and sets this variable to the resulting path. |
-| `SIGNING_PASS` | No | Release keystore and key password. Set with `SIGNING_KEY`; in GitHub Actions, configure it as a secret. |
+| `SIGNING_PASS` | No | Release keystore and key password. Set with `SIGNING_KEY`; in GitHub Actions, configure it as an environment secret. |
 
 Without signing material, debug builds use the standard Android debug key and
 release builds are unsigned.
@@ -54,12 +54,11 @@ Gradle property and the `signing.storePassword`, `signing.debugKeyPassword`,
 and `signing.releaseKeyPassword` properties in the untracked `local.properties`
 file.
 
-For signed GitHub Actions builds, configure these repository or organization
-Actions secrets: `SIGNING_KEY` (the OpenPGP-encrypted release keystore) and
-`SIGNING_PASS` (its decryption passphrase and the keystore/key password). The
-workflow decrypts `SIGNING_KEY` and passes the resulting file path to Gradle.
-When neither secret is configured, release artifacts are built unsigned. A
-partially configured set fails the main-branch signing check and reports which
-secret name is missing. Main-branch pushes and same-repository pull requests
-targeting `main` can be signed. Fork pull requests and non-main builds remain
-unsigned.
+For signed GitHub Actions builds, configure `SIGNING_KEY` (the OpenPGP-encrypted
+release keystore) and `SIGNING_PASS` (its decryption passphrase and the
+keystore/key password) as environment secrets in both `preview` and
+`production`. Same-repository pull requests use `preview`; pushes to the
+default branch use `production`. The workflow decrypts `SIGNING_KEY` and passes
+the resulting file path to Gradle. When neither secret is configured, the
+signed job is skipped; a partially configured set fails and reports the missing
+secret name. Fork pull requests do not receive environment secrets.
