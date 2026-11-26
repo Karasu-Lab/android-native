@@ -46,9 +46,14 @@ android {
                     val file = rootProject.file("local.properties")
                     if (file.exists()) file.inputStream().use { load(it) }
                 }
-                storePassword = props["signing.storePassword"]?.toString() ?: localProperties["signing.storePassword"]?.toString()
-                keyAlias = props["signing.keyAlias"]?.toString() ?: localProperties["signing.keyAlias"]?.toString() ?: "release"
-                keyPassword = props["signing.keyPassword"]?.toString() ?: props["signing.storePassword"]?.toString() ?: localProperties["signing.keyPassword"]?.toString() ?: localProperties["signing.storePassword"]?.toString()
+                storePassword = props["signing.storePassword"]?.toString()
+                    ?: localProperties["signing.storePassword"]?.toString()
+                keyAlias = props["signing.keyAlias"]?.toString()
+                    ?: localProperties["signing.keyAlias"]?.toString() ?: "release"
+                keyPassword = props["signing.keyPassword"]?.toString()
+                    ?: props["signing.storePassword"]?.toString()
+                            ?: localProperties["signing.keyPassword"]?.toString()
+                            ?: localProperties["signing.storePassword"]?.toString()
             }
         }
     }
