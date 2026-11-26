@@ -1,0 +1,16 @@
+{
+  "name": "karasu-lab-android",
+  "private": true,
+  "packageManager": "pnpm@12.23.0",
+  "scripts": {
+    "prepare": "husky",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "@commitlint/types": "^21.2.3",
+    "husky": "^9.1.7",
+    "typescript": "^7.0.2"
+  }
+}
