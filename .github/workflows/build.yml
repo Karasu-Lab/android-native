@@ -22,6 +22,8 @@ jobs:
     environment:
       name: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
     steps:
+      - name: Check out source
+        uses: actions/checkout@v7
       - name: Prepare Android signing key
         env:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
@@ -31,8 +33,6 @@ jobs:
           echo "$SIGNING_STORE_PASS=`pwd`/release-application-key" >> ./local.properties
           echo "$SIGNING_KEY_PASS=`pwd`/release-application-key" >> ./local.properties
           echo "$ALIAS=android" >> ./local.properties
-      - name: Check out source
-        uses: actions/checkout@v7
       - name: Set up Java
         uses: actions/setup-java@v6
         with:
