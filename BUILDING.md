@@ -5,6 +5,8 @@ and AAB artifacts for pull requests, pushes to `main`, and manual runs. Pull
 requests and non-`main` runs are unsigned. A push to `main` is signed only when
 all four Android signing secrets are configured; otherwise it succeeds and
 uploads unsigned release artifacts.
+The workflow installs the Android 17 (API 37) preview platform and its latest
+37.x build-tools package because the app compiles against API 37.
 
 Configure these repository or environment **Actions secrets** to enable signing:
 

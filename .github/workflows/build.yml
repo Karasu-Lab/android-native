@@ -101,7 +101,24 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
-          packages: platform-tools platforms;android-37
+          packages: platform-tools
+
+      - name: Install Android 17 preview SDK
+        run: |
+          set -euo pipefail
+          package_list="$(sdkmanager --channel=3 --list)"
+          build_tools="$(printf '%s\n' "$package_list" |
+            awk -F '|' '$1 ~ /^[[:space:]]*build-tools;37[.]/ {
+              gsub(/^[[:space:]]+|[[:space:]]+$/, "", $1)
+              print $1
+            }' |
+            sort -V |
+            tail -n 1)"
+          if [ -z "$build_tools" ]; then
+            echo "::error::No Android 17 (API 37) preview build-tools package is available."
+            exit 1
+          fi
+          sdkmanager --channel=3 --install "platforms;android-37" "$build_tools"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
