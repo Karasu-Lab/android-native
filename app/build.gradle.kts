@@ -122,12 +122,14 @@ android {
         debug {
             buildConfigField("String", "AUTH_HOST", "\"dev-api-auth.karasu256.com\"")
             buildConfigField("String", "ACCOUNTS_HOST", "\"dev-accounts.karasu256.com\"")
+            buildConfigField("String", "COOKIE_PREFIX", "\"preview\"")
             manifestPlaceholders["accountsHost"] = "dev-accounts.karasu256.com"
             manifestPlaceholders["accountsWildcardHost"] = "*.dev-accounts.karasu256.com"
         }
         release {
             buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
             buildConfigField("String", "ACCOUNTS_HOST", "\"accounts.karasu256.com\"")
+            buildConfigField("String", "COOKIE_PREFIX", "\"production\"")
             manifestPlaceholders["accountsHost"] = "accounts.karasu256.com"
             manifestPlaceholders["accountsWildcardHost"] = "accounts.karasu256.com"
             signingConfig = signingConfigs.findByName("release")

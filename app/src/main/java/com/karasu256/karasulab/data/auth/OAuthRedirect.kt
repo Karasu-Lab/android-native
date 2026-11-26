@@ -17,7 +17,9 @@ object OAuthCallback {
     private const val PATH = "/auth/app/callback"
 
     fun matches(uri: Uri): Boolean =
-        uri.scheme == "https" && uri.host?.endsWith(BuildConfig.ACCOUNTS_HOST) == true && uri.path?.startsWith(PATH) == true
+        uri.scheme == "https" && uri.host?.endsWith(BuildConfig.ACCOUNTS_HOST) == true && uri.path?.startsWith(
+            PATH
+        ) == true
 
     fun error(uri: Uri): String? = uri.getQueryParameter("error")
 
@@ -28,7 +30,10 @@ object OAuthCallback {
 
 @Singleton
 class OAuthCallbackHub @Inject constructor() {
-    private val _callbacks = MutableSharedFlow<Uri>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val _callbacks = MutableSharedFlow<Uri>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
     val callbacks: SharedFlow<Uri> = _callbacks.asSharedFlow()
 
     fun deliver(uri: Uri) {

@@ -23,11 +23,15 @@ class LinkedProviderRepository @Inject constructor(
         }
 
     suspend fun linkGoogle(idToken: String) {
-        authApi.linkSocial(sessionCookie.header(), LinkSocialRequest("google", IdTokenPayload(idToken))).ensureSuccess()
+        authApi.linkSocial(
+            sessionCookie.header(),
+            LinkSocialRequest("google", IdTokenPayload(idToken))
+        ).ensureSuccess()
         exchanger.reexchange(staleToken = null)
     }
 
     suspend fun unlink(providerId: String) {
-        authApi.unlinkAccount(sessionCookie.header(), UnlinkAccountRequest(providerId)).ensureSuccess()
+        authApi.unlinkAccount(sessionCookie.header(), UnlinkAccountRequest(providerId))
+            .ensureSuccess()
     }
 }
