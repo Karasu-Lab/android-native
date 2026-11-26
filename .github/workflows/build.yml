@@ -59,8 +59,12 @@ jobs:
           fi
 
           install -d -m 700 "$GNUPGHOME"
-          printf '%s' "$ANDROID_GPG_PRIVATE_KEY" | gpg --batch --import
-          secret_keys="$(gpg --batch --with-colons --list-secret-keys)"
+          private_key_file="$RUNNER_TEMP/android-gpg-private-key.asc"
+          trap 'rm -f "$private_key_file"' EXIT
+          umask 077
+          printf '%s\n' "$ANDROID_GPG_PRIVATE_KEY" > "$private_key_file"
+          gpg --batch --homedir "$GNUPGHOME" --import "$private_key_file"
+          secret_keys="$(gpg --batch --homedir "$GNUPGHOME" --with-colons --list-secret-keys)"
           if ! grep -q '^sec:' <<< "$secret_keys"; then
             echo "::error::The configured GPG key could not be imported."
             exit 1
