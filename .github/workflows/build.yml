@@ -35,7 +35,8 @@ jobs:
           tr -d ' \n\r' <<< '${{ secrets.SIGNING_KEY_BASE64 || secrets.SIGNING_KEY }}' | base64 -d > ./.keystore
           STORE_PASS=$(tr -d '\n\r' <<< "${SIGNING_STORE_PASSWORD:-$SIGNING_PASS}")
           KEY_PASS=$(tr -d '\n\r' <<< "${SIGNING_KEY_PASSWORD:-$STORE_PASS}")
-          KEY_ALIAS=$(tr -d '\n\r' <<< "${SIGNING_ALIAS:-${ALIAS:-release}}")
+          DETECTED_ALIAS=$(keytool -list -keystore ./.keystore -storepass "${STORE_PASS}" 2>/dev/null | grep "Alias name:" | head -n1 | sed 's/.*Alias name: *//' | tr -d ' \r')
+          KEY_ALIAS=$(tr -d '\n\r' <<< "${SIGNING_ALIAS:-${ALIAS:-${DETECTED_ALIAS:-release}}}")
           {
             echo "signing.storePassword=${STORE_PASS}"
             echo "signing.keyPassword=${KEY_PASS}"
