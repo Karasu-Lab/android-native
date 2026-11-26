@@ -135,6 +135,6 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJson: ./service-account.json
-          packageName: ${{ secrets.PACKAGE_NAME }}
+          packageName: ${{ vars.PACKAGE_NAME }}
           releaseFiles: app/build/outputs/bundle/release/*.aab
           track: ${{ github.event_name == 'pull_request' && 'internal' || 'production' }}
