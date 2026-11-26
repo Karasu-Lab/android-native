@@ -1,8 +1,6 @@
 package com.karasu256.karasulab.data.remote
 
-import com.karasu256.karasulab.data.auth.OAuthCallback
-import kotlinx.serialization.EncodeDefault
-import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
@@ -12,27 +10,50 @@ data class SocialSignInRequest(
     val idToken: IdTokenPayload,
 )
 
-@OptIn(ExperimentalSerializationApi::class)
-@Serializable
-data class LinkSocialRedirectRequest(
-    val provider: String,
-    @EncodeDefault val callbackURL: String = OAuthCallback.url,
-    @EncodeDefault val errorCallbackURL: String = callbackURL,
-)
-
-@Serializable
-data class SocialRedirectResponse(
-    val url: String? = null,
-)
-
 @Serializable
 data class OneTimeTokenRequest(
     val token: String,
 )
 
 @Serializable
+data class OAuthLinkRequest(
+    val provider: String,
+    @SerialName("callbackURL")
+    val callbackURL: String,
+)
+
+@Serializable
+data class OAuthLinkResponse(
+    val url: String,
+    val redirect: Boolean = false,
+)
+
+@Serializable
 data class IdTokenPayload(
     val token: String,
+)
+
+@Serializable
+data class OAuthProvidersResponse(
+    val providers: List<OAuthProviderResponse>,
+)
+
+@Serializable
+data class OAuthProviderResponse(
+    val id: String,
+    val label: String,
+    val kind: String,
+    val signIn: Boolean,
+    val link: Boolean,
+    val backgroundColor: OAuthProviderColors,
+    val foregroundColor: OAuthProviderColors,
+    val iconUrl: String,
+)
+
+@Serializable
+data class OAuthProviderColors(
+    val default: String,
+    val dark: String,
 )
 
 @Serializable
@@ -112,6 +133,7 @@ data class ErrorBody(
     val code: String? = null,
     val message: String? = null,
     val error: String? = null,
+    val reason: String? = null,
 )
 
 @Serializable

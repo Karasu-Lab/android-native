@@ -1,6 +1,7 @@
 package com.karasu256.karasulab.ui.signin
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.karasu256.karasulab.R
@@ -10,6 +11,8 @@ import com.karasu256.karasulab.data.AuthRepository
 import com.karasu256.karasulab.data.ChallengeOutcome
 import com.karasu256.karasulab.data.EmailChallenge
 import com.karasu256.karasulab.data.LookupOutcome
+import com.karasu256.karasulab.data.OAuthProvider
+import com.karasu256.karasulab.data.OAuthProviderRepository
 import com.karasu256.karasulab.data.SignInResult
 import com.karasu256.karasulab.data.auth.OAuthCallback
 import com.karasu256.karasulab.data.auth.OAuthCallbackHub
@@ -23,6 +26,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -33,6 +37,7 @@ class SignInViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val accountRepository: AccountRepository,
     callbackHub: OAuthCallbackHub,
+    private val oauthProviderRepository: OAuthProviderRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SignInUiState())
     val uiState: StateFlow<SignInUiState> = _uiState.asStateFlow()
@@ -44,9 +49,36 @@ class SignInViewModel @Inject constructor(
     private val _signedIn = Channel<Unit>(Channel.BUFFERED)
     val signedIn: Flow<Unit> = _signedIn.receiveAsFlow()
 
+    private val _openBrowser = Channel<String>(Channel.BUFFERED)
+    val openBrowser: Flow<String> = _openBrowser.receiveAsFlow()
+
     private var challenge: EmailChallenge? = null
     private var previousAccountId: String? = null
     private var switchToNewAccount = false
+
+    init {
+        viewModelScope.launch {
+            authRepository.oauthCompletions.collect { completion ->
+                if (completion.isLinking) return@collect
+                if (completion.result == SignInResult.Success) {
+                    finish()
+                } else {
+                    Log.e("SignInViewModel", "Native OAuth failed for ${completion.providerId}: ${completion.result}")
+                    _uiState.update { it.copy(emailError = completion.result.toError(R.string.error_unknown)) }
+                }
+            }
+        }
+        viewModelScope.launch {
+            attempt { oauthProviderRepository.list("signIn") }
+                .onSuccess { providers ->
+                    _uiState.update { it.copy(providers = providers.filter(OAuthProvider::signIn), providersLoading = false) }
+                }
+                .onFailure { error ->
+                    Log.e("SignInViewModel", "Could not load sign-in providers", error)
+                    _uiState.update { it.copy(providersLoading = false, providersError = UiText(R.string.error_unknown)) }
+                }
+        }
+    }
 
     fun configure(addAccount: Boolean, switchToNew: Boolean) {
         if (!addAccount || _uiState.value.addingAccount) return
@@ -146,6 +178,18 @@ class SignInViewModel @Inject constructor(
     private fun failOAuth(error: UiText = UiText(R.string.error_oauth_failed)) =
         _uiState.update { it.copy(emailError = error) }
 
+    fun signInWithOAuth(providerId: String) {
+        if (_uiState.value.providers.none { it.id == providerId && it.kind == "social" }) return
+        launchBusy(providerId = providerId) {
+            val url = attempt { authRepository.startOAuthSignIn(providerId, _uiState.value.addingAccount) }
+                .getOrElse { error ->
+                    Log.e("SignInViewModel", "Could not start $providerId sign-in", error)
+                    _uiState.update { it.copy(emailError = error.toUiText(R.string.error_unknown)) }
+                    return@launchBusy
+                }
+            _openBrowser.send(url)
+        }
+    }
     fun submitCode() {
         val state = _uiState.value
         val current = challenge ?: return
@@ -190,14 +234,14 @@ class SignInViewModel @Inject constructor(
         _signedIn.send(Unit)
     }
 
-    private fun launchBusy(method: ProviderMethod? = null, block: suspend () -> Unit) {
+    private fun launchBusy(method: ProviderMethod? = null, providerId: String? = null, block: suspend () -> Unit) {
         if (_uiState.value.busy) return
-        _uiState.update { it.copy(busy = true, busyMethod = method) }
+        _uiState.update { it.copy(busy = true, busyMethod = method, busyProviderId = providerId) }
         viewModelScope.launch {
             try {
                 block()
             } finally {
-                _uiState.update { it.copy(busy = false, busyMethod = null) }
+                _uiState.update { it.copy(busy = false, busyMethod = null, busyProviderId = null) }
             }
         }
     }

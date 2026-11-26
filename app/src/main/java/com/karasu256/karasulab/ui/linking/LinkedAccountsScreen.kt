@@ -39,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.R
 import com.karasu256.karasulab.auth.CredentialAuthenticator
+import com.karasu256.karasulab.data.OAuthProvider
 import com.karasu256.karasulab.ui.component.ConfirmDialog
 import com.karasu256.karasulab.ui.component.ErrorRetry
 import com.karasu256.karasulab.ui.component.IconTile
@@ -91,12 +92,12 @@ fun LinkedAccountsScreen(
             ErrorRetry(message = stringResource(R.string.load_error), onRetry = viewModel::load)
         }
         SettingsGroup {
-            linkProviders.forEach { provider ->
+            state.providers.filter(OAuthProvider::link).forEach { provider ->
                 item {
                     val profile = state.profiles[provider.id]
                     val busy = state.busyProviderId == provider.id
                     SettingsItem(
-                        title = profile?.let { it.name ?: it.email ?: provider.label } ?: provider.label,
+                        title = viewModel.profileTitle(provider, profile),
                         description = if (profile != null) {
                             profile.email ?: profile.accountId.orEmpty()
                         } else {

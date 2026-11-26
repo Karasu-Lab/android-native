@@ -5,8 +5,12 @@ import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
+import retrofit2.http.Query
 
 interface UserApi {
+    @GET("api/oauth/providers")
+    suspend fun oauthProviders(@Query("usage") usage: String): OAuthProvidersResponse
+
     @GET("user/profile")
     suspend fun profile(): ProfileResponse
 

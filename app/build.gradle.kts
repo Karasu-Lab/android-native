@@ -88,6 +88,8 @@ android {
 
         buildConfigField("String", "API_HOST", "\"api.karasu256.com\"")
         buildConfigField("String", "MC_AUTH_ADDRESS", "\"mc-auth.karasu256.com\"")
+        buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
+        buildConfigField("String", "AUTH_UI_HOST", "\"auth.karasu256.com\"")
     }
 
     signingConfigs {

@@ -6,13 +6,10 @@ import com.karasu256.karasulab.data.auth.ActiveSessionCookie
 import com.karasu256.karasulab.data.auth.SessionTokenExchanger
 import com.karasu256.karasulab.data.remote.AuthApi
 import com.karasu256.karasulab.data.remote.IdTokenPayload
-import com.karasu256.karasulab.data.remote.LinkSocialRedirectRequest
 import com.karasu256.karasulab.data.remote.LinkSocialRequest
 import com.karasu256.karasulab.data.remote.ProviderProfileResponse
-import com.karasu256.karasulab.data.remote.SocialRedirectResponse
 import com.karasu256.karasulab.data.remote.UnlinkAccountRequest
 import com.karasu256.karasulab.data.remote.apiCall
-import com.karasu256.karasulab.data.remote.bodyString
 import com.karasu256.karasulab.data.remote.ensureSuccess
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -48,14 +45,6 @@ class LinkedProviderRepository @Inject constructor(
             LinkSocialRequest("google", IdTokenPayload(idToken))
         ).ensureSuccess()
         exchanger.reexchange(staleToken = null)
-    }
-
-    suspend fun linkUrl(providerId: String): String {
-        if (providerId == "xbox") return "https://${BuildConfig.AUTH_HOST}/api/xbox/link"
-        val response = authApi.linkSocialRedirect(sessionCookie.header(), LinkSocialRedirectRequest(providerId))
-        if (!response.isSuccessful) response.ensureSuccess()
-        return json.decodeFromString<SocialRedirectResponse>(response.bodyString()).url
-            ?: error("The $providerId link URL was not returned")
     }
 
     suspend fun verifyMinecraft(code: String) {

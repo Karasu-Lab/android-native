@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -23,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -53,6 +55,7 @@ fun SignInScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
+    val uriHandler = LocalUriHandler.current
     val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
 
     LaunchedEffect(addAccount, switchToNewAccount) {
@@ -73,6 +76,9 @@ fun SignInScreen(
                 }
             }
         }
+    }
+    LaunchedEffect(viewModel) {
+        viewModel.openBrowser.collect(uriHandler::openUri)
     }
     BackHandler(enabled = state.step != SignInStep.Email) { viewModel.goBack() }
     BackHandler(enabled = state.busy) {}
@@ -97,6 +103,7 @@ fun SignInScreen(
                     onSubmit = viewModel::submitEmail,
                     onGoogle = { viewModel.signInWithGoogle(credentials) },
                     onPasskey = { viewModel.signInWithPasskey(credentials, fromStep = false) },
+                    onOAuth = viewModel::signInWithOAuth,
                 )
 
                 SignInStep.Passkey -> PasskeyStep(
@@ -140,6 +147,7 @@ private fun EmailStep(
     onSubmit: () -> Unit,
     onGoogle: () -> Unit,
     onPasskey: () -> Unit,
+    onOAuth: (String) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         StepHeader(title = stringResource(if (state.addingAccount) R.string.sign_in_add_account_title else R.string.sign_in_title))
@@ -162,12 +170,20 @@ private fun EmailStep(
         Spacer(Modifier.height(32.dp))
         OrDivider()
         Spacer(Modifier.height(24.dp))
-        ProviderButtons(
-            onGoogle = onGoogle,
-            onPasskey = onPasskey,
-            enabled = !state.busy,
-            busyMethod = state.busyMethod
-        )
+        if (state.providersLoading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+        } else {
+            ProviderButtons(
+                providers = state.providers,
+                onGoogle = onGoogle,
+                onPasskey = onPasskey,
+                onOAuth = onOAuth,
+                enabled = !state.busy,
+                busyMethod = state.busyMethod,
+                busyProviderId = state.busyProviderId,
+            )
+        }
+        state.providersError?.let { FormError(text = it.resolve(), modifier = Modifier.padding(top = 12.dp)) }
     }
 }
 

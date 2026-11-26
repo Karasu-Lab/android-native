@@ -1,14 +1,21 @@
 package com.karasu256.karasulab.data
 
 import android.util.Log
+import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.data.auth.AccountAlreadySignedInException
 import com.karasu256.karasulab.data.auth.OAuthRedirect
+import com.karasu256.karasulab.data.auth.ActiveSessionCookie
+import com.karasu256.karasulab.data.auth.NativeOAuthCallbackUri
+import com.karasu256.karasulab.data.auth.NativeOAuthStateStore
 import com.karasu256.karasulab.data.auth.SessionTokenExchanger
 import com.karasu256.karasulab.data.local.SessionStore
 import com.karasu256.karasulab.data.remote.AuthApi
 import com.karasu256.karasulab.data.remote.EmailChallengeRequest
 import com.karasu256.karasulab.data.remote.ErrorBody
 import com.karasu256.karasulab.data.remote.IdTokenPayload
+import com.karasu256.karasulab.data.remote.OAuthLinkRequest
+import com.karasu256.karasulab.data.remote.OAuthLinkResponse
+import com.karasu256.karasulab.data.remote.OneTimeTokenRequest
 import com.karasu256.karasulab.data.remote.PasskeyVerifyRequest
 import com.karasu256.karasulab.data.remote.RateLimitBody
 import com.karasu256.karasulab.data.remote.SessionCookie
@@ -19,6 +26,8 @@ import com.karasu256.karasulab.data.remote.bodyString
 import com.karasu256.karasulab.data.remote.cookieHeader
 import com.karasu256.karasulab.data.remote.setCookies
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
@@ -35,9 +44,14 @@ class AuthRepository @Inject constructor(
     private val authApi: AuthApi,
     private val store: SessionStore,
     private val exchanger: SessionTokenExchanger,
+    private val sessionCookie: ActiveSessionCookie,
+    private val oauthStateStore: NativeOAuthStateStore,
     private val json: Json,
     private val oauthRedirect: OAuthRedirect,
 ) {
+    private val _oauthCompletions = MutableSharedFlow<NativeOAuthCompletion>(extraBufferCapacity = 1)
+    val oauthCompletions: SharedFlow<NativeOAuthCompletion> = _oauthCompletions
+
     val isSignedIn: Flow<Boolean> = store.token.map { it != null }.distinctUntilChanged()
 
     suspend fun lookup(email: String): LookupOutcome {
@@ -102,6 +116,78 @@ class AuthRepository @Inject constructor(
     } catch (e: Exception) {
         Log.e("AuthRepository", "Social sign-in failed: $e", e)
         SignInResult.Failed
+    }
+
+    fun startOAuthSignIn(providerId: String, rejectKnown: Boolean = false): String {
+        val state = NativeOAuthCallbackUri.newState()
+        val url = NativeOAuthCallbackUri.signInUrl(providerId, state, BuildConfig.AUTH_UI_HOST)
+        oauthStateStore.save(state, providerId, rejectKnown)
+        return url
+    }
+
+    suspend fun startOAuthLink(providerId: String): String {
+        val state = NativeOAuthCallbackUri.newState()
+        val callbackURL = NativeOAuthCallbackUri.callback(providerId, state)
+        val response = authApi.startOAuthLink(
+            sessionCookie.header(),
+            OAuthLinkRequest(provider = providerId, callbackURL = callbackURL),
+        )
+        val body = response.body()?.string()
+        response.errorBody()?.close()
+        if (!response.isSuccessful) throw HttpException(response)
+
+        val url = body?.let { json.decodeFromString<OAuthLinkResponse>(it).url }
+            ?: throw IOException("OAuth link initiation returned no authorization URL")
+        if (!url.startsWith("https://")) throw IOException("OAuth link initiation returned an invalid authorization URL")
+
+        oauthStateStore.save(state, providerId, rejectKnown = false, isLinking = true)
+        return url
+    }
+
+    suspend fun completeOAuthCallback(rawUri: String): SignInResult {
+        val callback = NativeOAuthCallbackUri.parse(rawUri) ?: return SignInResult.Failed
+        val pending = oauthStateStore.consume(callback.state, callback.providerId) ?: return SignInResult.Failed
+        val result = when {
+            callback.error != null -> {
+                Log.e("AuthRepository", "Native OAuth failed for ${callback.providerId}: ${callback.error}")
+                SignInResult.Failed
+            }
+            pending.isLinking -> {
+                if (callback.token == null && callback.linked == callback.providerId) SignInResult.Success else SignInResult.Failed
+            }
+            callback.token == null -> SignInResult.Failed
+            else -> completeNativeSignIn(callback.state, callback.token, pending.rejectKnown)
+        }
+        _oauthCompletions.emit(NativeOAuthCompletion(callback.providerId, result, pending.isLinking))
+        return result
+    }
+
+    private suspend fun completeNativeSignIn(state: String, token: String, rejectKnown: Boolean): SignInResult {
+        return try {
+            val response = authApi.verifyOneTimeToken(state, OneTimeTokenRequest(token))
+            response.body()?.close()
+            response.errorBody()?.close()
+            if (!response.isSuccessful) {
+                Log.e("AuthRepository", "Native OAuth token verification failed with ${response.code()}")
+                return SignInResult.Failed
+            }
+            val cookie = SessionCookie.from(response) ?: run {
+                Log.e("AuthRepository", "Native OAuth token verification returned no session cookie")
+                return SignInResult.Failed
+            }
+            exchanger.exchange(cookie, rejectKnown)?.let { SignInResult.Success } ?: SignInResult.Failed
+        } catch (e: AccountAlreadySignedInException) {
+            revoke(e.cookie)
+            SignInResult.AccountAlreadySignedIn
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e("AuthRepository", "Native OAuth session exchange failed on the network: $e", e)
+            SignInResult.NetworkError
+        } catch (e: HttpException) {
+            Log.e("AuthRepository", "Native OAuth session exchange failed with ${e.code()}", e)
+            SignInResult.Failed
+        }
     }
 
     suspend fun requestPasskeyChallenge(): PasskeyChallenge {
