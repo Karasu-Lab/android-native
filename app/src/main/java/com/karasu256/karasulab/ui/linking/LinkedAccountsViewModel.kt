@@ -116,6 +116,8 @@ class LinkedAccountsViewModel @Inject constructor(
         }
     }
 
+    fun addressCopied() = _uiState.update { it.copy(message = UiText(R.string.minecraft_verify_address_copied)) }
+
     fun dismissMinecraft() = _uiState.update { it.copy(minecraftDialog = false, minecraftError = null) }
 
     fun verifyMinecraft(code: String) {
@@ -130,7 +132,7 @@ class LinkedAccountsViewModel @Inject constructor(
                 }
                 .onFailure { error ->
                     Log.e("LinkedAccountsViewModel", "Verifying the Minecraft code failed", error)
-                    val message = if ((error as? ApiException)?.status == 409) R.string.minecraft_already_linked else R.string.minecraft_verify_failed
+                    val message = if ((error as? ApiException)?.status == 409) R.string.minecraft_verify_already_linked else R.string.minecraft_verify_failed
                     _uiState.update { it.copy(minecraftError = UiText(message)) }
                 }
             _uiState.update { it.copy(busyProviderId = null) }

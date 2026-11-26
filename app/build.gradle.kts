@@ -87,6 +87,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "API_HOST", "\"api.karasu256.com\"")
+        buildConfigField("String", "MC_AUTH_ADDRESS", "\"mc-auth.karasu256.com\"")
     }
 
     signingConfigs {

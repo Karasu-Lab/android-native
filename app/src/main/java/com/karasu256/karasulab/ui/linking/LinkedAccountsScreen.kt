@@ -1,5 +1,7 @@
 package com.karasu256.karasulab.ui.linking
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import androidx.activity.compose.LocalActivity
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.Spacer
@@ -21,13 +23,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -36,12 +36,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.R
 import com.karasu256.karasulab.auth.CredentialAuthenticator
-import com.karasu256.karasulab.ui.component.CodeField
 import com.karasu256.karasulab.ui.component.ConfirmDialog
 import com.karasu256.karasulab.ui.component.ErrorRetry
-import com.karasu256.karasulab.ui.component.FormDialog
 import com.karasu256.karasulab.ui.component.IconTile
 import com.karasu256.karasulab.ui.component.MinecraftAvatar
 import com.karasu256.karasulab.ui.component.SettingsGroup
@@ -148,25 +147,18 @@ fun LinkedAccountsScreen(
             )
         }
         if (state.minecraftDialog) {
-            var code by rememberSaveable { mutableStateOf("") }
-            val verifying = state.busyProviderId == "minecraft"
-            FormDialog(
-                title = stringResource(R.string.minecraft_verify_title),
-                confirmLabel = stringResource(R.string.minecraft_verify_action),
-                onConfirm = { viewModel.verifyMinecraft(code) },
-                onDismiss = viewModel::dismissMinecraft,
-                busy = verifying,
-                confirmEnabled = code.length == 6,
+            val context = LocalContext.current
+            MinecraftVerifyDialog(
+                verifying = state.busyProviderId == "minecraft",
                 error = state.minecraftError?.resolve(),
-            ) {
-                CodeField(
-                    value = code,
-                    onValueChange = { code = it },
-                    label = stringResource(R.string.minecraft_verify_code_label),
-                    enabled = !verifying,
-                    onImeAction = { if (code.length == 6) viewModel.verifyMinecraft(code) },
-                )
-            }
+                onVerify = viewModel::verifyMinecraft,
+                onDismiss = viewModel::dismissMinecraft,
+                onCopyAddress = {
+                    context.getSystemService(ClipboardManager::class.java)
+                        .setPrimaryClip(ClipData.newPlainText(BuildConfig.MC_AUTH_ADDRESS, BuildConfig.MC_AUTH_ADDRESS))
+                    viewModel.addressCopied()
+                },
+            )
         }
         state.unlinkTarget?.let { provider ->
             ConfirmDialog(
