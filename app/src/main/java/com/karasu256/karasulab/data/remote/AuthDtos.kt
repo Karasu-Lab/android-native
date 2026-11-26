@@ -1,5 +1,6 @@
 package com.karasu256.karasulab.data.remote
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
@@ -17,6 +18,7 @@ data class OneTimeTokenRequest(
 @Serializable
 data class OAuthLinkRequest(
     val provider: String,
+    @SerialName("callbackURL")
     val callbackURL: String,
 )
 
