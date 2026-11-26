@@ -71,7 +71,10 @@ fun gpgDecrypt(name: String, passphrase: String? = null): ByteArray? {
     return null
 }
 
-val gpgDebugPassword: String? = gpgDecrypt("com.karasu256.karasulab.password.gpg")
+val gpgDebugPassword: String? = gpgDecrypt(
+    "com.karasu256.karasulab.password.gpg",
+    passphrase = signingStorePassword?.takeIf { it.isNotBlank() },
+)
     ?.toString(Charsets.UTF_8)
     ?.trim()
 
@@ -100,7 +103,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "API_HOST", "\"api.karasu256.com\"")
+        buildConfigField("String", "MC_AUTH_ADDRESS", "\"mc-auth.karasu256.com\"")
         buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
+        buildConfigField("String", "AUTH_UI_HOST", "\"auth.karasu256.com\"")
     }
 
     signingConfigs {
@@ -140,7 +145,23 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "AUTH_HOST", "\"dev-api-auth.karasu256.com\"")
+            buildConfigField("String", "ACCOUNTS_HOST", "\"dev-accounts.karasu256.com\"")
+            buildConfigField("String", "COOKIE_PREFIX", "\"preview\"")
+            buildConfigField("String", "MC_AUTH_HOST", "\"dev-mc-auth.karasu256.com\"")
+            buildConfigField("String", "CDN_URL", "\"https://dev-cdn.karasu256.com/\"")
+            manifestPlaceholders["accountsHost"] = "dev-accounts.karasu256.com"
+            manifestPlaceholders["accountsWildcardHost"] = "*.dev-accounts.karasu256.com"
+        }
         release {
+            buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
+            buildConfigField("String", "ACCOUNTS_HOST", "\"accounts.karasu256.com\"")
+            buildConfigField("String", "COOKIE_PREFIX", "\"production\"")
+            buildConfigField("String", "MC_AUTH_HOST", "\"mc-auth.karasu256.com\"")
+            buildConfigField("String", "CDN_URL", "\"https://cdn.karasu256.com/\"")
+            manifestPlaceholders["accountsHost"] = "accounts.karasu256.com"
+            manifestPlaceholders["accountsWildcardHost"] = "accounts.karasu256.com"
             signingConfig = signingConfigs.findByName("release")
             optimization {
                 enable = false
@@ -164,6 +185,7 @@ room {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.browser)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.text.google.fonts)
