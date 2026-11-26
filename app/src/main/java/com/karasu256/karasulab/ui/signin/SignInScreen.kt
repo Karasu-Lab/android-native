@@ -52,15 +52,25 @@ fun SignInScreen(
     viewModel: SignInViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val activity = LocalActivity.current    val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
+    val activity = LocalActivity.current
+    val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
 
-    LaunchedEffect(addAccount, switchToNewAccount) { viewModel.configure(addAccount, switchToNewAccount) }
+    LaunchedEffect(addAccount, switchToNewAccount) {
+        viewModel.configure(
+            addAccount,
+            switchToNewAccount
+        )
+    }
     LaunchedEffect(viewModel) {
         viewModel.signedIn.collect {
             if (addAccount) {
                 navigator.popBackStack()
             } else {
-                navigator.navigate(SettingsScreenDestination) { popUpTo(NavGraphs.root) { inclusive = true } }
+                navigator.navigate(SettingsScreenDestination) {
+                    popUpTo(NavGraphs.root) {
+                        inclusive = true
+                    }
+                }
             }
         }
     }
@@ -75,7 +85,11 @@ fun SignInScreen(
             else -> null
         },
     ) {
-        StepHost(step = state.step, steps = SignInStep.entries, modifier = Modifier.fillMaxWidth()) { step ->
+        StepHost(
+            step = state.step,
+            steps = SignInStep.entries,
+            modifier = Modifier.fillMaxWidth()
+        ) { step ->
             when (step) {
                 SignInStep.Email -> EmailStep(
                     state = state,
@@ -84,11 +98,13 @@ fun SignInScreen(
                     onGoogle = { viewModel.signInWithGoogle(credentials) },
                     onPasskey = { viewModel.signInWithPasskey(credentials, fromStep = false) },
                 )
+
                 SignInStep.Passkey -> PasskeyStep(
                     state = state,
                     onPasskey = { viewModel.signInWithPasskey(credentials, fromStep = true) },
                     onOtherMethods = viewModel::goToMethods,
                 )
+
                 SignInStep.Methods -> MethodsStep(state = state, onCode = viewModel::startCode)
                 SignInStep.Code -> CodeStep(
                     state = state,
@@ -136,13 +152,22 @@ private fun EmailStep(
             onImeAction = onSubmit,
         )
         Spacer(Modifier.height(16.dp))
-        Button(onClick = onSubmit, enabled = !state.busy && state.email.isNotBlank(), modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = onSubmit,
+            enabled = !state.busy && state.email.isNotBlank(),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text(stringResource(R.string.action_next))
         }
         Spacer(Modifier.height(32.dp))
         OrDivider()
         Spacer(Modifier.height(24.dp))
-        ProviderButtons(onGoogle = onGoogle, onPasskey = onPasskey, enabled = !state.busy, busyMethod = state.busyMethod)
+        ProviderButtons(
+            onGoogle = onGoogle,
+            onPasskey = onPasskey,
+            enabled = !state.busy,
+            busyMethod = state.busyMethod
+        )
     }
 }
 
@@ -151,11 +176,29 @@ private fun PasskeyStep(state: SignInUiState, onPasskey: () -> Unit, onOtherMeth
     Column(modifier = Modifier.fillMaxWidth()) {
         StepHeader(title = stringResource(R.string.passkey_step_title), supporting = state.email)
         Button(onClick = onPasskey, enabled = !state.busy, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Filled.Fingerprint, contentDescription = null, modifier = Modifier.size(20.dp))
-            Text(text = stringResource(R.string.passkey_use), modifier = Modifier.padding(start = 12.dp))
+            Icon(
+                Icons.Filled.Fingerprint,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = stringResource(R.string.passkey_use),
+                modifier = Modifier.padding(start = 12.dp)
+            )
         }
-        state.passkeyError?.let { FormError(text = it.resolve(), modifier = Modifier.padding(top = 12.dp)) }
-        TextButton(onClick = onOtherMethods, enabled = !state.busy, modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 16.dp)) {
+        state.passkeyError?.let {
+            FormError(
+                text = it.resolve(),
+                modifier = Modifier.padding(top = 12.dp)
+            )
+        }
+        TextButton(
+            onClick = onOtherMethods,
+            enabled = !state.busy,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(top = 16.dp)
+        ) {
             Text(stringResource(R.string.methods_other))
         }
     }
@@ -165,11 +208,23 @@ private fun PasskeyStep(state: SignInUiState, onPasskey: () -> Unit, onOtherMeth
 private fun MethodsStep(state: SignInUiState, onCode: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         StepHeader(title = stringResource(R.string.methods_title), supporting = state.email)
-        OutlinedButton(onClick = onCode, enabled = !state.busy, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(
+            onClick = onCode,
+            enabled = !state.busy,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Icon(Icons.Filled.Mail, contentDescription = null, modifier = Modifier.size(20.dp))
-            Text(text = stringResource(R.string.code_link), modifier = Modifier.padding(start = 12.dp))
+            Text(
+                text = stringResource(R.string.code_link),
+                modifier = Modifier.padding(start = 12.dp)
+            )
         }
-        state.methodsError?.let { FormError(text = it.resolve(), modifier = Modifier.padding(top = 12.dp)) }
+        state.methodsError?.let {
+            FormError(
+                text = it.resolve(),
+                modifier = Modifier.padding(top = 12.dp)
+            )
+        }
     }
 }
 
@@ -181,7 +236,10 @@ private fun CodeStep(
     onResend: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        StepHeader(title = stringResource(R.string.code_title), supporting = stringResource(R.string.code_description, state.email))
+        StepHeader(
+            title = stringResource(R.string.code_title),
+            supporting = stringResource(R.string.code_description, state.email)
+        )
         CodeField(
             value = state.code,
             onValueChange = onCodeChange,
@@ -191,10 +249,20 @@ private fun CodeStep(
             onImeAction = onSubmit,
         )
         Spacer(Modifier.height(16.dp))
-        Button(onClick = onSubmit, enabled = !state.busy && state.code.length == 6, modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = onSubmit,
+            enabled = !state.busy && state.code.length == 6,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text(stringResource(R.string.sign_in))
         }
-        TextButton(onClick = onResend, enabled = !state.busy, modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp)) {
+        TextButton(
+            onClick = onResend,
+            enabled = !state.busy,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(top = 8.dp)
+        ) {
             Text(stringResource(R.string.code_resend))
         }
     }
