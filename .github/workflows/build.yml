@@ -57,14 +57,12 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build signed release APK and AAB
-        if: steps.check.outputs.available == 'true'
         env:
           SIGNING_KEY: ${{ runner.temp }}/android-release.jks
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
         run: |
           ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease
       - name: Upload signed release APK and AAB
-        if: steps.check.outputs.available == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: android-release-signed-${{ github.sha }}
