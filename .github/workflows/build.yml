@@ -34,6 +34,7 @@ jobs:
             echo "signing.keyPassword=$(tr -d '\n\r' <<< "${SIGNING_PASS}")"
             echo "signing.keyAlias=release"
           } > ./local.properties
+          keytool -list -v -keystore ./.keystore -storepass "$(tr -d '\n\r' <<< "${SIGNING_PASS}")"
       - name: Set up Java
         uses: actions/setup-java@v6
         with:
