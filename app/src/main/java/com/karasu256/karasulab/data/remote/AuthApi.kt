@@ -14,6 +14,12 @@ interface AuthApi {
     @POST("api/auth/sign-in/social")
     suspend fun signInSocial(@Body body: SocialSignInRequest): Response<ResponseBody>
 
+    @POST("api/auth/one-time-token/verify")
+    suspend fun verifyOneTimeToken(
+        @Query("state") state: String,
+        @Body body: OneTimeTokenRequest,
+    ): Response<ResponseBody>
+
     @GET("api/sign-in/lookup")
     suspend fun lookupSignIn(@Query("email") email: String): Response<ResponseBody>
 

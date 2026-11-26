@@ -88,7 +88,7 @@ class LinkedAccountsViewModel @Inject constructor(
     fun link(provider: LinkProvider, credentials: CredentialProvider) {
         if (_uiState.value.busyProviderId != null) return
         if (provider.id != "google") {
-            _openBrowser.trySend("https://${BuildConfig.AUTH_HOST.replace("api-auth", "accounts")}/settings/linking")
+            _openBrowser.trySend("https://${BuildConfig.ACCOUNTS_HOST}/settings/linking")
             return
         }
         _uiState.update { it.copy(busyProviderId = provider.id) }

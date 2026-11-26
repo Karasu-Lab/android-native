@@ -87,7 +87,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "API_HOST", "\"api.karasu256.com\"")
-        buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
     }
 
     signingConfigs {
@@ -120,7 +119,17 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "AUTH_HOST", "\"dev-api-auth.karasu256.com\"")
+            buildConfigField("String", "ACCOUNTS_HOST", "\"dev-accounts.karasu256.com\"")
+            manifestPlaceholders["accountsHost"] = "dev-accounts.karasu256.com"
+            manifestPlaceholders["accountsWildcardHost"] = "*.dev-accounts.karasu256.com"
+        }
         release {
+            buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
+            buildConfigField("String", "ACCOUNTS_HOST", "\"accounts.karasu256.com\"")
+            manifestPlaceholders["accountsHost"] = "accounts.karasu256.com"
+            manifestPlaceholders["accountsWildcardHost"] = "accounts.karasu256.com"
             signingConfig = signingConfigs.findByName("release")
             optimization {
                 enable = false

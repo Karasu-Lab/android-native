@@ -17,7 +17,11 @@ data class SessionCookie(
     }
 }
 
+fun String.withoutCookieDomain(): String = replace(Regex(";\\s*Domain=[^;]*", RegexOption.IGNORE_CASE), "")
+
 fun Response<*>.setCookies(): List<Cookie> {
     val url = raw().request.url
-    return headers().values("Set-Cookie").mapNotNull { Cookie.parse(url, it) }
+    return headers().values("Set-Cookie").mapNotNull { header ->
+        Cookie.parse(url, header) ?: Cookie.parse(url, header.withoutCookieDomain())
+    }
 }

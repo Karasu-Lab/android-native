@@ -52,8 +52,7 @@ fun SignInScreen(
     viewModel: SignInViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val activity = LocalActivity.current
-    val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
+    val activity = LocalActivity.current    val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
 
     LaunchedEffect(addAccount, switchToNewAccount) { viewModel.configure(addAccount, switchToNewAccount) }
     LaunchedEffect(viewModel) {
@@ -66,6 +65,7 @@ fun SignInScreen(
         }
     }
     BackHandler(enabled = state.step != SignInStep.Email) { viewModel.goBack() }
+    BackHandler(enabled = state.busy) {}
 
     AuthFrame(
         busy = state.busy,

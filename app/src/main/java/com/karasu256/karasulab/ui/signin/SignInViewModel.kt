@@ -1,5 +1,6 @@
 package com.karasu256.karasulab.ui.signin
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.karasu256.karasulab.R
@@ -10,6 +11,8 @@ import com.karasu256.karasulab.data.ChallengeOutcome
 import com.karasu256.karasulab.data.EmailChallenge
 import com.karasu256.karasulab.data.LookupOutcome
 import com.karasu256.karasulab.data.SignInResult
+import com.karasu256.karasulab.data.auth.OAuthCallback
+import com.karasu256.karasulab.data.auth.OAuthCallbackHub
 import com.karasu256.karasulab.data.remote.attempt
 import com.karasu256.karasulab.ui.UiText
 import com.karasu256.karasulab.ui.component.ProviderMethod
@@ -29,9 +32,14 @@ import javax.inject.Inject
 class SignInViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val accountRepository: AccountRepository,
+    callbackHub: OAuthCallbackHub,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SignInUiState())
     val uiState: StateFlow<SignInUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch { callbackHub.callbacks.collect(::onOAuthCallback) }
+    }
 
     private val _signedIn = Channel<Unit>(Channel.BUFFERED)
     val signedIn: Flow<Unit> = _signedIn.receiveAsFlow()
@@ -120,6 +128,23 @@ class SignInViewModel @Inject constructor(
             if (result == SignInResult.Success) finish()
         }
     }
+
+    private fun onOAuthCallback(uri: Uri) {
+        val token = OAuthCallback.token(uri)
+        val state = OAuthCallback.state(uri)
+        if (OAuthCallback.error(uri) != null || token == null || state == null) {
+            failOAuth()
+            return
+        }
+        launchBusy {
+            val outcome = authRepository.completeSocialSignIn(token, state, _uiState.value.addingAccount)
+            outcome.toError(R.string.error_oauth_failed)?.let(::failOAuth)
+            if (outcome == SignInResult.Success) finish()
+        }
+    }
+
+    private fun failOAuth(error: UiText = UiText(R.string.error_oauth_failed)) =
+        _uiState.update { it.copy(emailError = error) }
 
     fun submitCode() {
         val state = _uiState.value

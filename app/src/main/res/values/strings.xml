@@ -27,6 +27,7 @@
     <string name="email">メールアドレス</string>
     <string name="or_divider">または</string>
     <string name="sign_in_with_google">Google で続行</string>
+    <string name="error_oauth_failed">サインインに失敗しました。もう一度お試しください</string>
     <string name="sign_in_with_passkey">パスキーで続行</string>
     <string name="passkey_step_title">パスキーでサインイン</string>
     <string name="passkey_use">パスキーを使用</string>

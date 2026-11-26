@@ -10,6 +10,11 @@ data class SocialSignInRequest(
 )
 
 @Serializable
+data class OneTimeTokenRequest(
+    val token: String,
+)
+
+@Serializable
 data class IdTokenPayload(
     val token: String,
 )

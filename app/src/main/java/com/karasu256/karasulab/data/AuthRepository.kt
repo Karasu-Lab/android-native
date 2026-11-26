@@ -2,6 +2,7 @@ package com.karasu256.karasulab.data
 
 import android.util.Log
 import com.karasu256.karasulab.data.auth.AccountAlreadySignedInException
+import com.karasu256.karasulab.data.auth.OAuthRedirect
 import com.karasu256.karasulab.data.auth.SessionTokenExchanger
 import com.karasu256.karasulab.data.local.SessionStore
 import com.karasu256.karasulab.data.remote.AuthApi
@@ -34,6 +35,7 @@ class AuthRepository @Inject constructor(
     private val store: SessionStore,
     private val exchanger: SessionTokenExchanger,
     private val json: Json,
+    private val oauthRedirect: OAuthRedirect,
 ) {
     val isSignedIn: Flow<Boolean> = store.token.map { it != null }.distinctUntilChanged()
 
@@ -67,6 +69,24 @@ class AuthRepository @Inject constructor(
         signIn("Google", rejectKnown) {
             authApi.signInSocial(SocialSignInRequest(provider = "google", idToken = IdTokenPayload(idToken)))
         }
+
+    suspend fun completeSocialSignIn(token: String, state: String, rejectKnown: Boolean): SignInResult = try {
+        val cookie = oauthRedirect.exchangeToken(token, state)
+        if (cookie == null) {
+            Log.e("AuthRepository", "The one-time token response set no session cookie")
+            SignInResult.Failed
+        } else {
+            exchangeSession(cookie, rejectKnown)
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        Log.e("AuthRepository", "Social sign-in failed on the network: $e", e)
+        SignInResult.NetworkError
+    } catch (e: Exception) {
+        Log.e("AuthRepository", "Social sign-in failed: $e", e)
+        SignInResult.Failed
+    }
 
     suspend fun requestPasskeyChallenge(): PasskeyChallenge {
         val response = authApi.generatePasskeyAuthenticateOptions()
@@ -176,15 +196,17 @@ class AuthRepository @Inject constructor(
             Log.e("AuthRepository", "The sign-in response set no session cookie: ${response.code()} ${response.headers()}")
             return SignInResult.Failed
         }
-        return try {
-            exchanger.exchange(cookie, rejectKnown)?.let { SignInResult.Success } ?: run {
-                Log.e("AuthRepository", "The session could not be exchanged for a custom token")
-                SignInResult.Failed
-            }
-        } catch (e: AccountAlreadySignedInException) {
-            revoke(e.cookie)
-            SignInResult.AccountAlreadySignedIn
+        return exchangeSession(cookie, rejectKnown)
+    }
+
+    private suspend fun exchangeSession(cookie: SessionCookie, rejectKnown: Boolean): SignInResult = try {
+        exchanger.exchange(cookie, rejectKnown)?.let { SignInResult.Success } ?: run {
+            Log.e("AuthRepository", "The session could not be exchanged for a custom token")
+            SignInResult.Failed
         }
+    } catch (e: AccountAlreadySignedInException) {
+        revoke(e.cookie)
+        SignInResult.AccountAlreadySignedIn
     }
 
     private suspend fun revoke(cookie: SessionCookie) {
