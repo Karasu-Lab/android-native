@@ -58,7 +58,7 @@ fun gpgDecrypt(name: String, passphrase: String? = null): ByteArray? {
     return null
 }
 
-val gpgDebugPassword: String? = gpgDecrypt("com.karasu256.karasulab.password.gpg")
+val gpgDebugPassword: String? = gpgDecrypt("com.karasu256.karasulab.password.gpg", passphrase = signingStorePassword?.takeIf { it.isNotBlank() })
     ?.toString(Charsets.UTF_8)
     ?.trim()
 
