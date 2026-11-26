@@ -43,8 +43,8 @@ android {
             if (keystoreFile.exists()) {
                 storeFile = keystoreFile
                 storePassword = localProperties["signing.storePassword"]?.toString()
-                keyAlias = "android"
-                keyPassword = localProperties["signing.keyPassword"]?.toString()
+                keyAlias = localProperties["signing.keyAlias"]?.toString() ?: "release"
+                keyPassword = localProperties["signing.keyPassword"]?.toString() ?: localProperties["signing.storePassword"]?.toString()
             }
         }
     }

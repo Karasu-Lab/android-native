@@ -31,6 +31,7 @@ jobs:
           tr -d ' \n\r' <<< '${{ secrets.SIGNING_KEY }}' | base64 -d > ./.keystore
           echo "signing.storePassword=$SIGNING_PASS" >> ./local.properties
           echo "signing.keyPassword=$SIGNING_PASS" >> ./local.properties
+          echo "signing.keyAlias=release" >> ./local.properties
       - name: Set up Java
         uses: actions/setup-java@v6
         with:
