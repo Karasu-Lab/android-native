@@ -125,7 +125,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: android-release-signed-${{ github.sha }}
-          path: app/build/outputs/bundle/release/
+          path: app/build/outputs
       - name: Decode Google Play Service Account Key
         env:
           IAM_PRIVATE_KEY: ${{ secrets.IAM_PRIVATE_KEY }}
@@ -136,5 +136,5 @@ jobs:
         with:
           serviceAccountJson: ./service-account.json
           packageName: ${{ vars.PACKAGE_NAME }}
-          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+          releaseFiles: app/build/outputs/bundle/release/*.aab
           track: ${{ github.event_name == 'pull_request' && 'internal' || 'production' }}
