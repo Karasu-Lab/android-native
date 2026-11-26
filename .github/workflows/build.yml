@@ -23,10 +23,13 @@ jobs:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
         run: |
-          if [ "$GITHUB_EVENT_NAME" != "push" ] || [ "$GITHUB_REF" != "refs/heads/main" ]; then
-            echo "Signing secrets are only used by builds of the main branch; this build will be unsigned."
-            exit 0
-          fi
+          case "$GITHUB_EVENT_NAME:$GITHUB_REF" in
+            push:refs/heads/main|workflow_dispatch:refs/heads/main) ;;
+            *)
+              echo "Signing secrets are only used by main-branch pushes and manual runs; this build will be unsigned."
+              exit 0
+              ;;
+          esac
 
           configured=0
           missing=()
