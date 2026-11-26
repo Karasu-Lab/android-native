@@ -32,28 +32,21 @@ jobs:
           echo "$SIGNING_KEY_PASS=`pwd`/release-application-key" >> ./local.properties
           echo "$ALIAS=android" >> ./local.properties
       - name: Check out source
-        if: steps.check.outputs.available == 'true'
         uses: actions/checkout@v7
-
       - name: Set up Java
-        if: steps.check.outputs.available == 'true'
         uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
-
       - name: Set up Android SDK
-        if: steps.check.outputs.available == 'true'
         uses: android-actions/setup-android@v4
         with:
           packages: platform-tools
 
       - name: Install Android 17 preview SDK
-        if: steps.check.outputs.available == 'true'
         run: sdkmanager --channel=3 --install "platforms;android-37.0" "build-tools;37.0.0"
 
       - name: Set up Gradle
-        if: steps.check.outputs.available == 'true'
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build signed release APK and AAB
