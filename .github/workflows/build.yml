@@ -126,6 +126,6 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           service-account-json: ./service-account.json
-          package-name: com.karasu256.karasulab
+          package-name: ${{ secrets.PACKAGE_NAME }}
           releaseFiles: app/build/outputs/bundle/release/*.aab
           track: ${{ github.event_name == 'pull_request' && 'internal' || 'production' }}
