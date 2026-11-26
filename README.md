@@ -61,5 +61,5 @@ encrypted release keystore), and `SIGNING_PASS` (the keystore and key
 password). `SIGNING_KEY` is set by the workflow to the decrypted keystore path;
 it is not a secret that needs to be configured. When none of the signing
 secrets are configured, release artifacts are built unsigned. A partially
-configured set fails the main-branch signing job and reports which secret
+configured set fails the main-branch signing check and reports which secret
 names are missing. Pull request and non-main builds remain unsigned.
