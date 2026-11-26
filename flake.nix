@@ -26,6 +26,8 @@
           default = pkgs.mkShell {
             packages = [
               pkgs.gnupg
+              pkgs.nodejs
+              pkgs.pnpm
               pinentry
             ];
             env.PINENTRY_PROGRAM = pinentryProgram;

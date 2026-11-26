@@ -29,6 +29,19 @@ To build a release APK and Android App Bundle:
 ./gradlew :app:assembleRelease :app:bundleRelease
 ```
 
+## Commit messages
+
+With Node.js 22.12+ and pnpm installed, run the following to enable the commit
+message hook:
+
+```sh
+pnpm install --frozen-lockfile
+```
+
+Commit messages must use Conventional Commit format without a scope. The allowed
+types are `feat`, `chore`, `fix`, and `revert`; other types and non-Conventional
+formats are rejected by the Git `commit-msg` hook.
+
 ## Local signing
 
 Signing credentials are optional and should not be committed. The signing
