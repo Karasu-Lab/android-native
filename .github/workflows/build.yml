@@ -29,7 +29,7 @@ jobs:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
         run: |
-          echo "$SIGNING_KEY" | base64 -d > ./.keystore
+          echo "$SIGNING_KEY" | gpg --batch --yes --passphrase "$SIGNING_PASS" -o ./.keystore --decrypt
           echo "signing.storePassword=$SIGNING_PASS" >> ./local.properties
           echo "signing.keyPassword=$SIGNING_PASS" >> ./local.properties
       - name: Set up Java
