@@ -60,5 +60,6 @@ Actions secrets: `SIGNING_KEY` (the OpenPGP-encrypted release keystore) and
 workflow decrypts `SIGNING_KEY` and passes the resulting file path to Gradle.
 When neither secret is configured, release artifacts are built unsigned. A
 partially configured set fails the main-branch signing check and reports which
-secret name is missing. Main-branch pushes and manual runs can be signed; pull
-request and non-main builds remain unsigned.
+secret name is missing. Main-branch pushes and same-repository pull requests
+targeting `main` can be signed. Fork pull requests and non-main builds remain
+unsigned.
