@@ -6,7 +6,8 @@ requests and non-`main` runs are unsigned. A push to `main` is signed only when
 all four Android signing secrets are configured; otherwise it succeeds and
 uploads unsigned release artifacts.
 The workflow installs the Android 17 (API 37) preview platform and its latest
-37.x build-tools package because the app compiles against API 37.
+37.0.0 build-tools package (`platforms;android-37.0` and `build-tools;37.0.0`)
+because the app compiles against API 37.
 
 Configure these repository or environment **Actions secrets** to enable signing:
 
