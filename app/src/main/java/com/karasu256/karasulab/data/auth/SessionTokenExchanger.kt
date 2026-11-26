@@ -29,7 +29,10 @@ class SessionTokenExchanger @Inject constructor(
         val response = authApi.getSession(cookie.toHeader())
         if (response.code() in 401..403) {
             response.errorBody()?.close()
-            Log.e("SessionTokenExchanger", "get-session rejected the session cookie with ${response.code()}")
+            Log.e(
+                "SessionTokenExchanger",
+                "get-session rejected the session cookie with ${response.code()}"
+            )
             return null
         }
         if (!response.isSuccessful) throw HttpException(response)
@@ -42,10 +45,15 @@ class SessionTokenExchanger @Inject constructor(
             return null
         }
         val customToken = response.headers()["set-auth-jwt"] ?: run {
-            Log.e("SessionTokenExchanger", "get-session returned no set-auth-jwt header: ${response.headers()}")
+            Log.e(
+                "SessionTokenExchanger",
+                "get-session returned no set-auth-jwt header: ${response.headers()}"
+            )
             return null
         }
-        if (rejectKnown && store.account(user.id) != null) throw AccountAlreadySignedInException(cookie)
+        if (rejectKnown && store.account(user.id) != null) throw AccountAlreadySignedInException(
+            cookie
+        )
         val renewed = SessionCookie.from(response) ?: cookie
         val token = AuthTokenEntity(
             sessionCookieName = renewed.name,
@@ -79,7 +87,11 @@ class SessionTokenExchanger @Inject constructor(
     suspend fun reexchange(staleToken: String?): String? = mutex.withLock {
         val current = store.currentToken() ?: return@withLock null
         if (staleToken != null && current.customToken != staleToken) return@withLock current.customToken
-        val cookie = SessionCookie(current.sessionCookieName, current.sessionCookieValue, current.sessionExpiresAtMs)
+        val cookie = SessionCookie(
+            current.sessionCookieName,
+            current.sessionCookieValue,
+            current.sessionExpiresAtMs
+        )
         val refreshed = exchange(cookie)
         if (refreshed == null) store.clearActive()
         refreshed?.customToken

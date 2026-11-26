@@ -39,7 +39,13 @@ class ConnectionRepository @Inject constructor(
 
         launch {
             val (status, meta) = probe(BuildConfig.API_HOST) { userApi.meta() }
-            update { it.copy(api = HostConnection(meta?.apiUrl?.toHttpUrl()?.host ?: BuildConfig.API_HOST, status), branch = meta?.gitBranch) }
+            update {
+                it.copy(
+                    api = HostConnection(
+                        meta?.apiUrl?.toHttpUrl()?.host ?: BuildConfig.API_HOST, status
+                    ), branch = meta?.gitBranch
+                )
+            }
         }
         launch {
             val (status) = probe(BuildConfig.AUTH_HOST) { authApi.ok() }
@@ -47,18 +53,19 @@ class ConnectionRepository @Inject constructor(
         }
     }
 
-    private suspend fun <T> probe(host: String, block: suspend () -> T): Pair<HostStatus, T?> = try {
-        HostStatus.Connected to withTimeout(5.seconds) { block() }
-    } catch (e: TimeoutCancellationException) {
-        Log.w("ConnectionProbe", "$host did not answer within 5 seconds: $e", e)
-        HostStatus.TimedOut to null
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: SocketTimeoutException) {
-        Log.w("ConnectionProbe", "$host timed out: $e", e)
-        HostStatus.TimedOut to null
-    } catch (e: Exception) {
-        Log.w("ConnectionProbe", "$host could not be reached: $e", e)
-        HostStatus.Failed to null
-    }
+    private suspend fun <T> probe(host: String, block: suspend () -> T): Pair<HostStatus, T?> =
+        try {
+            HostStatus.Connected to withTimeout(5.seconds) { block() }
+        } catch (e: TimeoutCancellationException) {
+            Log.w("ConnectionProbe", "$host did not answer within 5 seconds: $e", e)
+            HostStatus.TimedOut to null
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SocketTimeoutException) {
+            Log.w("ConnectionProbe", "$host timed out: $e", e)
+            HostStatus.TimedOut to null
+        } catch (e: Exception) {
+            Log.w("ConnectionProbe", "$host could not be reached: $e", e)
+            HostStatus.Failed to null
+        }
 }

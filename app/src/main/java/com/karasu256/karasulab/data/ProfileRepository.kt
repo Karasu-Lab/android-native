@@ -37,14 +37,21 @@ class ProfileRepository @Inject constructor(
 
     suspend fun uploadIcon(bytes: ByteArray, mimeType: String) {
         val account = store.requireAccount()
-        val part = MultipartBody.Part.createFormData("file", "avatar", bytes.toRequestBody(mimeType.toMediaType()))
+        val part = MultipartBody.Part.createFormData(
+            "file",
+            "avatar",
+            bytes.toRequestBody(mimeType.toMediaType())
+        )
         val response = apiCall { userApi.uploadProfileImage(part) }
         store.updateProfile(account.id, account.name, response.image)
     }
 
     suspend fun setIcon(url: String?) {
         val account = store.requireAccount()
-        authApi.updateUserImage(sessionCookie.header(), UpdateImageRequest(if (url == null) JsonNull else JsonPrimitive(url))).ensureSuccess()
+        authApi.updateUserImage(
+            sessionCookie.header(),
+            UpdateImageRequest(if (url == null) JsonNull else JsonPrimitive(url))
+        ).ensureSuccess()
         store.updateProfile(account.id, account.name, url)
     }
 
