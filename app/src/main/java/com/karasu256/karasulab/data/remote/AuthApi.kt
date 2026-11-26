@@ -16,12 +16,6 @@ interface AuthApi {
     @POST("api/auth/sign-in/social")
     suspend fun signInSocial(@Body body: SocialSignInRequest): Response<ResponseBody>
 
-    @POST("api/auth/link-social")
-    suspend fun linkSocialRedirect(
-        @Header("Cookie") cookie: String,
-        @Body body: LinkSocialRedirectRequest,
-    ): Response<ResponseBody>
-
     @GET
     suspend fun verifyMinecraft(
         @Url url: String,
@@ -33,6 +27,12 @@ interface AuthApi {
     suspend fun verifyOneTimeToken(
         @Query("state") state: String,
         @Body body: OneTimeTokenRequest,
+    ): Response<ResponseBody>
+
+    @POST("api/oauth/link")
+    suspend fun startOAuthLink(
+        @Header("Cookie") cookie: String,
+        @Body body: OAuthLinkRequest,
     ): Response<ResponseBody>
 
     @GET("api/sign-in/lookup")
