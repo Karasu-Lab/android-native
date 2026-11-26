@@ -22,59 +22,15 @@ jobs:
     environment:
       name: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
     steps:
-      - name: Check signing secrets
-        id: check
-        env:
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-          SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
-        run: |
-          configured=0
-          missing=()
-          for value in "$SIGNING_KEY" "$SIGNING_PASS"; do
-            if [ -n "$value" ]; then
-              configured=$((configured + 1))
-            fi
-          done
-
-          [ -n "$SIGNING_KEY" ] || missing+=("SIGNING_KEY")
-          [ -n "$SIGNING_PASS" ] || missing+=("SIGNING_PASS")
-
-          if [ "$configured" -eq 0 ]; then
-            echo "Signing secrets are not configured; release artifacts will be unsigned."
-            exit 0
-          fi
-
-          if [ "$configured" -ne 2 ]; then
-            echo "::error::Configure all required Android signing secrets. Missing: ${missing[*]}."
-            exit 1
-          fi
-
-          echo "available=true" >> "$GITHUB_OUTPUT"
-        shell: bash
-
       - name: Prepare Android signing key
-        if: steps.check.outputs.available == 'true'
         env:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
-          GNUPGHOME: ${{ runner.temp }}/android-gnupg
         run: |
-          set -euo pipefail
-          umask 077
-          install -d -m 700 "$GNUPGHOME"
-
-          encrypted_keystore_file="$RUNNER_TEMP/android-release.jks.gpg"
-          passphrase_file="$RUNNER_TEMP/android-gpg-passphrase"
-          trap 'rm -f "$encrypted_keystore_file" "$passphrase_file"' EXIT
-
-          printf '%s' "$SIGNING_KEY" > "$encrypted_keystore_file"
-          printf '%s' "$SIGNING_PASS" > "$passphrase_file"
-          gpg --batch --homedir "$GNUPGHOME" --yes --pinentry-mode loopback \
-            --passphrase-file "$passphrase_file" \
-            --output "$RUNNER_TEMP/android-release.jks" \
-            --decrypt "$encrypted_keystore_file"
-          test -s "$RUNNER_TEMP/android-release.jks"
-
+          $SIGNING_KEY | base64 -d >> ./.keystore
+          echo "$SIGNING_STORE_PASS=`pwd`/release-application-key" >> ./local.properties
+          echo "$SIGNING_KEY_PASS=`pwd`/release-application-key" >> ./local.properties
+          echo "$ALIAS=android" >> ./local.properties
       - name: Check out source
         if: steps.check.outputs.available == 'true'
         uses: actions/checkout@v7
@@ -107,15 +63,6 @@ jobs:
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
         run: |
           ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease
-
-      - name: Remove signing material
-        if: always()
-        run: |
-          rm -f "$RUNNER_TEMP/android-release.jks" \
-            "$RUNNER_TEMP/android-release.jks.gpg" \
-            "$RUNNER_TEMP/android-gpg-passphrase"
-          rm -rf "$RUNNER_TEMP/android-gnupg"
-
       - name: Upload signed release APK and AAB
         if: steps.check.outputs.available == 'true'
         uses: actions/upload-artifact@v7
