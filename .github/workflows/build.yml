@@ -11,8 +11,50 @@ permissions:
   contents: read
 
 jobs:
+  release_please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'push' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) ||
+      (github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !startsWith(github.head_ref, 'release-please--') &&
+      !contains(github.event.pull_request.labels.*.name, 'autorelease: pending'))
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      base_version: ${{ steps.version.outputs.base_version }}
+      version_name: ${{ steps.version.outputs.version_name }}
+      version_code: ${{ steps.version.outputs.version_code }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Compute build version
+        id: version
+        run: |
+          BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          {
+            echo "base_version=${BASE_VERSION}"
+            echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
+            echo "version_code=$(date +%s)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run Release Please
+        uses: googleapis/release-please-action@v5
+        with:
+          target-branch: ${{ github.event_name == 'pull_request' && github.head_ref || github.event.repository.default_branch }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          skip-github-release: ${{ github.event_name == 'pull_request' }}
+
   android-signed:
     name: Build signed release APK and AAB
+    needs: release_please
     runs-on: ubuntu-latest
     if: >-
       (github.event_name == 'push' &&
@@ -63,14 +105,34 @@ jobs:
         env:
           SIGNING_KEY: ${{ runner.temp }}/android-release.jks
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
+          VERSION_NAME: ${{ needs.release_please.outputs.version_name }}
+          VERSION_CODE: ${{ needs.release_please.outputs.version_code }}
         run: |
-          ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease
+          ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease \
+            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+      - name: Verify signed APK and report
+        run: |
+          APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -n1)
+          REPORT=app/build/outputs/apk/release/apksigner-report.txt
+          set +e
+          "$APKSIGNER" verify --verbose --print-certs "$APK" > "$REPORT" 2>&1
+          STATUS=$?
+          set -e
+          {
+            echo "## APK signature verification"
+            echo '```'
+            cat "$REPORT"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$STATUS"
       - name: Upload signed release APK and AAB
         uses: actions/upload-artifact@v7
         with:
           name: android-release-signed-${{ github.sha }}
           path: |
             app/build/outputs/apk/release/*.apk
+            app/build/outputs/apk/release/apksigner-report.txt
             app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
@@ -81,6 +143,16 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v7
+
+      - name: Compute build version
+        id: version
+        run: |
+          BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          {
+            echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
+            echo "version_code=$(date +%s)"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Set up Java
         uses: actions/setup-java@v6
@@ -100,7 +172,12 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build unsigned release APK and AAB
-        run: ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        run: |
+          ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease \
+            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
 
       - name: Upload unsigned release APK and AAB
         uses: actions/upload-artifact@v7
@@ -112,9 +189,36 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  release-artifacts:
+    name: Collect release artifacts
+    needs:
+      - android-signed
+      - android-unsigned
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download signed artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-signed-${{ github.sha }}
+          path: release-artifacts/signed
+      - name: Download unsigned artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-unsigned-${{ github.sha }}
+          path: release-artifacts/unsigned
+      - name: Upload combined release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-release-${{ github.sha }}
+          path: release-artifacts/**
+          if-no-files-found: error
+          retention-days: 14
+
   google-play-release:
     name: Release to Google Play
-    needs: android-signed
+    needs:
+      - android-signed
+      - release_please
     runs-on: ubuntu-latest
     environment:
       name: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
@@ -131,10 +235,34 @@ jobs:
           IAM_PRIVATE_KEY: ${{ secrets.IAM_PRIVATE_KEY }}
         run: |
           tr -d ' \n\r' <<< '${{ secrets.IAM_PRIVATE_KEY }}' | base64 -d > ./service-account.json
+      - name: Prepare Google Play release notes
+        env:
+          BASE_VERSION: ${{ needs.release_please.outputs.base_version }}
+        run: |
+          mkdir -p distribution/whatsnew
+          NOTES=""
+          if [ -f CHANGELOG.md ]; then
+            NOTES=$(awk -v ver="$BASE_VERSION" '
+              BEGIN { gsub(/\./, "\\.", ver) }
+              $0 ~ "^## \\[?" ver "\\]?" { capture = 1; next }
+              capture && /^## / { exit }
+              capture { print }
+            ' CHANGELOG.md)
+          fi
+          if [ -z "$NOTES" ]; then
+            NOTES=$(git log -1 --pretty=%s)
+          fi
+          printf '%s\n' "$NOTES" \
+            | sed -E 's/\[([^]]+)\]\([^)]*\)/\1/g; s/^#+ .*$//; s/^[[:space:]]*[*-] /- /; s/^[[:space:]]+//' \
+            | sed '/^$/d' \
+            | head -c 500 > distribution/whatsnew/whatsnew-en-US
+          cp distribution/whatsnew/whatsnew-en-US distribution/whatsnew/whatsnew-ja-JP
       - name: Publish to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJson: ./service-account.json
           packageName: ${{ vars.PACKAGE_NAME }}
           releaseFiles: app/build/outputs/bundle/release/*.aab
-          track: ${{ github.event_name == 'pull_request' && 'internal' || 'production' }}
+          tracks: ${{ github.event_name == 'pull_request' && 'internal' || 'production' }}
+          releaseName: ${{ needs.release_please.outputs.version_name }}
+          whatsNewDirectory: distribution/whatsnew

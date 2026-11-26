@@ -16,6 +16,9 @@ val localProperties = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 
+val appVersionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
+val appVersionName = project.findProperty("versionName")?.toString() ?: "1.0"
+
 android {
     namespace = "com.karasu256.karasulab"
     compileSdk {
@@ -26,8 +29,8 @@ android {
         applicationId = "com.karasu256.karasulab"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
