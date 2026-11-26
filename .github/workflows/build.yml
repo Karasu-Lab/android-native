@@ -132,7 +132,6 @@ jobs:
           name: android-release-signed-${{ github.sha }}
           path: |
             app/build/outputs/apk/release/*.apk
-            app/build/outputs/apk/release/apksigner-report.txt
             app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
