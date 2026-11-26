@@ -27,7 +27,6 @@
     <string name="email">メールアドレス</string>
     <string name="or_divider">または</string>
     <string name="sign_in_with_google">Google で続行</string>
-    <string name="error_oauth_failed">サインインに失敗しました。もう一度お試しください</string>
     <string name="sign_in_with_passkey">パスキーで続行</string>
     <string name="passkey_step_title">パスキーでサインイン</string>
     <string name="passkey_use">パスキーを使用</string>
@@ -137,15 +136,6 @@
     <string name="connections_linked">%1$s を連携しました</string>
     <string name="connections_link_failed">連携に失敗しました。もう一度お試しください。</string>
     <string name="connections_open_in_browser">ブラウザで連携</string>
-    <string name="minecraft_verify_title">Minecraft アカウントを認証</string>
-    <string name="minecraft_verify_description">Minecraft サーバーに参加して表示された 6 桁のコードを入力してください。</string>
-    <string name="minecraft_verify_server_address">サーバーアドレス</string>
-    <string name="minecraft_verify_copy_address">サーバーアドレスをコピー</string>
-    <string name="minecraft_verify_address_copied">サーバーアドレスをコピーしました。</string>
-    <string name="minecraft_verify_code_label">認証コード</string>
-    <string name="minecraft_verify_action">認証</string>
-    <string name="minecraft_verify_failed">認証に失敗しました。コードを確認してもう一度お試しください。</string>
-    <string name="minecraft_verify_already_linked">そのアカウントは既に別のユーザーと紐づいています。</string>
 
     <string name="authorized_apps_title">認可したアプリ</string>
     <string name="authorized_apps_empty">認可したアプリはありません</string>

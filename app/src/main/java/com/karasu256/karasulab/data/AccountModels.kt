@@ -29,28 +29,6 @@ data class ProviderProfile(
     val avatarUrl: String?,
 )
 
-data class OAuthProvider(
-    val id: String,
-    val label: String,
-    val kind: String,
-    val signIn: Boolean,
-    val link: Boolean,
-    val backgroundColor: ProviderColors,
-    val foregroundColor: ProviderColors,
-    val iconUrl: String,
-)
-
-data class ProviderColors(
-    val default: String,
-    val dark: String,
-)
-
-data class NativeOAuthCompletion(
-    val providerId: String,
-    val result: SignInResult,
-    val isLinking: Boolean,
-)
-
 data class AuthorizedApp(
     val id: String,
     val clientId: String,

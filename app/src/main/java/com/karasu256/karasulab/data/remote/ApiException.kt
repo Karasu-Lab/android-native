@@ -24,7 +24,7 @@ private fun parseErrorBody(raw: String?): ErrorBody? =
 
 fun HttpException.toApiException(): ApiException {
     val body = parseErrorBody(response()?.errorBody()?.use { it.string() })
-    return ApiException(code(), body?.code, body?.reason ?: body?.message ?: body?.error ?: message(), this)
+    return ApiException(code(), body?.code, body?.message ?: body?.error ?: message(), this)
 }
 
 fun Response<ResponseBody>.ensureSuccess() {
@@ -33,7 +33,7 @@ fun Response<ResponseBody>.ensureSuccess() {
         return
     }
     val body = parseErrorBody(errorBody()?.use { it.string() })
-    throw ApiException(code(), body?.code, body?.reason ?: body?.message ?: body?.error ?: message())
+    throw ApiException(code(), body?.code, body?.message ?: body?.error ?: message())
 }
 
 fun Response<ResponseBody>.bodyString(): String =

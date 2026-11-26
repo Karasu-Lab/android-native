@@ -27,21 +27,13 @@ class AccountRepository @Inject constructor(
     suspend fun ensureActiveAccount() {
         val token = store.currentToken() ?: return
         if (store.currentAccount() != null) return
-        val cookie = SessionCookie(
-            token.sessionCookieName,
-            token.sessionCookieValue,
-            token.sessionExpiresAtMs
-        )
+        val cookie = SessionCookie(token.sessionCookieName, token.sessionCookieValue, token.sessionExpiresAtMs)
         if (exchanger.exchange(cookie) == null) store.clearActive()
     }
 
     suspend fun switchTo(id: String): Boolean {
         val account = store.account(id) ?: return false
-        val cookie = SessionCookie(
-            account.sessionCookieName,
-            account.sessionCookieValue,
-            account.sessionExpiresAtMs
-        )
+        val cookie = SessionCookie(account.sessionCookieName, account.sessionCookieValue, account.sessionExpiresAtMs)
         if (exchanger.exchange(cookie) != null) return true
         store.removeAccount(id)
         return false
@@ -67,11 +59,7 @@ class AccountRepository @Inject constructor(
 
     private suspend fun revoke(account: AccountEntity) {
         try {
-            val cookie = SessionCookie(
-                account.sessionCookieName,
-                account.sessionCookieValue,
-                account.sessionExpiresAtMs
-            )
+            val cookie = SessionCookie(account.sessionCookieName, account.sessionCookieValue, account.sessionExpiresAtMs)
             authApi.signOut(cookie.toHeader()).also {
                 it.body()?.close()
                 it.errorBody()?.close()

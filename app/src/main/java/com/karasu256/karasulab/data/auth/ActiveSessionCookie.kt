@@ -16,10 +16,6 @@ class ActiveSessionCookie @Inject constructor(
 
     private suspend fun cookie(): SessionCookie {
         val token = store.requireToken()
-        return SessionCookie(
-            token.sessionCookieName,
-            token.sessionCookieValue,
-            token.sessionExpiresAtMs
-        )
+        return SessionCookie(token.sessionCookieName, token.sessionCookieValue, token.sessionExpiresAtMs)
     }
 }

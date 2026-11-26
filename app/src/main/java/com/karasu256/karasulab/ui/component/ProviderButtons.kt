@@ -13,56 +13,40 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.karasu256.karasulab.R
-import com.karasu256.karasulab.data.OAuthProvider
 
 enum class ProviderMethod { Google, Passkey }
 
 @Composable
 fun ProviderButtons(
-    providers: List<OAuthProvider>,
     onGoogle: () -> Unit,
     onPasskey: () -> Unit,
-    onOAuth: (String) -> Unit,
     enabled: Boolean,
     busyMethod: ProviderMethod?,
-    busyProviderId: String?,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        providers.filter(OAuthProvider::signIn).forEach { provider ->
-            val method = when (provider.id) {
-                "google" -> ProviderMethod.Google
-                "passkey" -> ProviderMethod.Passkey
-                else -> null
-            }
-            ProviderButton(
-                label = provider.label,
-                onClick = {
-                    when (provider.id) {
-                        "google" -> onGoogle()
-                        "passkey" -> onPasskey()
-                        else -> onOAuth(provider.id)
-                    }
-                },
-                enabled = enabled,
-                busy = busyMethod == method && method != null || busyProviderId == provider.id,
-            ) {
-                when (provider.id) {
-                    "google" -> Icon(
-                        painter = painterResource(R.drawable.ic_google_logo),
-                        contentDescription = null,
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    "passkey" -> Icon(imageVector = Icons.Filled.Fingerprint, contentDescription = null, modifier = Modifier.size(20.dp))
-                    else -> Text(text = provider.label.firstOrNull()?.uppercase() ?: "?", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
-                }
-            }
+        ProviderButton(
+            label = stringResource(R.string.sign_in_with_google),
+            onClick = onGoogle,
+            enabled = enabled,
+            busy = busyMethod == ProviderMethod.Google,
+        ) {
+            Icon(painter = painterResource(R.drawable.ic_google_logo), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(20.dp))
+        }
+        ProviderButton(
+            label = stringResource(R.string.sign_in_with_passkey),
+            onClick = onPasskey,
+            enabled = enabled,
+            busy = busyMethod == ProviderMethod.Passkey,
+        ) {
+            Icon(imageVector = Icons.Filled.Fingerprint, contentDescription = null, modifier = Modifier.size(20.dp))
         }
     }
 }

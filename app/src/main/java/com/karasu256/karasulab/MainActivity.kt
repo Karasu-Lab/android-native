@@ -1,6 +1,5 @@
 package com.karasu256.karasulab
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,8 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
-import com.karasu256.karasulab.data.auth.OAuthCallbackHub
-import com.karasu256.karasulab.data.auth.NativeOAuthCallbackUri
 import com.karasu256.karasulab.ui.loading.LoadingScreen
 import com.karasu256.karasulab.ui.navigation.PushPopTransitions
 import com.karasu256.karasulab.ui.splash.SplashScreen
@@ -33,42 +30,21 @@ import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDes
 import com.ramcosta.composedestinations.generated.destinations.SignInScreenDestination
 import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
 
-    @Inject
-    lateinit var oauthCallbackHub: OAuthCallbackHub
-
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        dispatchOAuthCallback(intent)
         setContent {
             AppTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     LaunchFlow(viewModel)
                 }
             }
-        }
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        dispatchOAuthCallback(intent)
-    }
-
-    private fun dispatchOAuthCallback(intent: Intent?) {
-        val uri = intent?.data ?: return
-        intent.data = null
-        if (NativeOAuthCallbackUri.parse(uri.toString()) != null) {
-            viewModel.onOAuthCallback(uri.toString())
-        } else {
-            oauthCallbackHub.deliver(uri)
         }
     }
 }
@@ -101,11 +77,9 @@ private fun AppContent(viewModel: MainViewModel) {
     val navigator = navController.rememberDestinationsNavigator()
 
     LaunchedEffect(isSignedIn) {
-        when {
-            isSignedIn == false && navController.currentDestination?.route != SignInScreenDestination.route -> {
-                navigator.navigate(SignInScreenDestination()) {
-                    popUpTo(NavGraphs.root) { inclusive = true }
-                }
+        if (isSignedIn == false && navController.currentDestination?.route != SignInScreenDestination.route) {
+            navigator.navigate(SignInScreenDestination()) {
+                popUpTo(NavGraphs.root) { inclusive = true }
             }
         }
     }

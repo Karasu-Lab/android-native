@@ -34,11 +34,9 @@ interface SessionStore {
 
 class NotSignedInException : IllegalStateException("Not signed in")
 
-suspend fun SessionStore.requireToken(): AuthTokenEntity =
-    currentToken() ?: throw NotSignedInException()
+suspend fun SessionStore.requireToken(): AuthTokenEntity = currentToken() ?: throw NotSignedInException()
 
-suspend fun SessionStore.requireAccount(): AccountEntity =
-    currentAccount() ?: throw NotSignedInException()
+suspend fun SessionStore.requireAccount(): AccountEntity = currentAccount() ?: throw NotSignedInException()
 
 class RoomSessionStore @Inject constructor(
     private val database: AppDatabase,
@@ -62,12 +60,7 @@ class RoomSessionStore @Inject constructor(
             val accounts = database.accountDao()
             val existing = accounts.get(account.id)
             accounts.deactivateAll()
-            accounts.upsert(
-                account.copy(
-                    isActive = true,
-                    addedAtMs = existing?.addedAtMs ?: account.addedAtMs
-                )
-            )
+            accounts.upsert(account.copy(isActive = true, addedAtMs = existing?.addedAtMs ?: account.addedAtMs))
             database.authTokenDao().upsert(token)
         }
     }

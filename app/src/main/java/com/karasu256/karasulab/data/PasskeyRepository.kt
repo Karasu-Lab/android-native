@@ -36,11 +36,7 @@ class PasskeyRepository @Inject constructor(
         val registration = credentials.createPasskey(optionsJson) ?: return null
         val user = json.decodeFromString<PasskeyRegisterOptions>(optionsJson).user
         val defaultName = user.displayName ?: user.name.orEmpty()
-        return PendingPasskey(
-            defaultName,
-            json.decodeFromString<JsonElement>(registration),
-            "$session; $challenge"
-        )
+        return PendingPasskey(defaultName, json.decodeFromString<JsonElement>(registration), "$session; $challenge")
     }
 
     suspend fun complete(pending: PendingPasskey, name: String) {

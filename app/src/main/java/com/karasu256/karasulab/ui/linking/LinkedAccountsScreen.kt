@@ -1,9 +1,6 @@
 package com.karasu256.karasulab.ui.linking
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import androidx.activity.compose.LocalActivity
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -27,19 +24,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.R
 import com.karasu256.karasulab.auth.CredentialAuthenticator
-import com.karasu256.karasulab.data.OAuthProvider
 import com.karasu256.karasulab.ui.component.ConfirmDialog
 import com.karasu256.karasulab.ui.component.ErrorRetry
 import com.karasu256.karasulab.ui.component.IconTile
@@ -68,13 +62,12 @@ fun LinkedAccountsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
     val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
+    val uriHandler = LocalUriHandler.current
     val snackbarHostState = remember { SnackbarHostState() }
     val message = state.message?.resolve()
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.load() }
-    LaunchedEffect(viewModel) {
-        viewModel.openBrowser.collect { CustomTabsIntent.Builder().build().launchUrl(checkNotNull(activity), it.toUri()) }
-    }
+    LaunchedEffect(viewModel) { viewModel.openBrowser.collect(uriHandler::openUri) }
     LaunchedEffect(message) {
         if (message != null) {
             snackbarHostState.showSnackbar(message)
@@ -92,12 +85,12 @@ fun LinkedAccountsScreen(
             ErrorRetry(message = stringResource(R.string.load_error), onRetry = viewModel::load)
         }
         SettingsGroup {
-            state.providers.filter(OAuthProvider::link).forEach { provider ->
+            linkProviders.forEach { provider ->
                 item {
                     val profile = state.profiles[provider.id]
                     val busy = state.busyProviderId == provider.id
                     SettingsItem(
-                        title = viewModel.profileTitle(provider, profile),
+                        title = profile?.let { it.name ?: it.email ?: provider.label } ?: provider.label,
                         description = if (profile != null) {
                             profile.email ?: profile.accountId.orEmpty()
                         } else {
@@ -114,23 +107,27 @@ fun LinkedAccountsScreen(
                                 IconTile(providerIcon(provider.id), Tone.Neutral)
                             }
                         },
-                        trailing = {
-                            IconButton(
-                                onClick = {
-                                    if (profile != null) {
-                                        viewModel.askUnlink(provider)
+                        trailing = if (state.loading && state.profiles.isEmpty()) {
+                            null
+                        } else {
+                            {
+                                IconButton(
+                                    onClick = {
+                                        if (profile != null) {
+                                            viewModel.askUnlink(provider)
+                                        } else {
+                                            viewModel.link(provider, credentials)
+                                        }
+                                    },
+                                    enabled = !busy && state.busyProviderId == null && (profile == null || state.canUnlink),
+                                ) {
+                                    if (busy) {
+                                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                    } else if (profile != null) {
+                                        Icon(Icons.Filled.LinkOff, contentDescription = stringResource(R.string.connections_unlink))
                                     } else {
-                                        viewModel.link(provider, credentials)
+                                        Icon(Icons.Filled.Link, contentDescription = stringResource(R.string.connections_link))
                                     }
-                                },
-                                enabled = state.profiles.isNotEmpty() && !busy && state.busyProviderId == null && (profile == null || state.canUnlink),
-                            ) {
-                                if (busy) {
-                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                } else if (profile != null) {
-                                    Icon(Icons.Filled.LinkOff, contentDescription = stringResource(R.string.connections_unlink))
-                                } else {
-                                    Icon(Icons.Filled.Link, contentDescription = stringResource(R.string.connections_link))
                                 }
                             }
                         },
@@ -145,20 +142,6 @@ fun LinkedAccountsScreen(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        if (state.minecraftDialog) {
-            val context = LocalContext.current
-            MinecraftVerifyDialog(
-                verifying = state.busyProviderId == "minecraft",
-                error = state.minecraftError?.resolve(),
-                onVerify = viewModel::verifyMinecraft,
-                onDismiss = viewModel::dismissMinecraft,
-                onCopyAddress = {
-                    context.getSystemService(ClipboardManager::class.java)
-                        .setPrimaryClip(ClipData.newPlainText(BuildConfig.MC_AUTH_ADDRESS, BuildConfig.MC_AUTH_ADDRESS))
-                    viewModel.addressCopied()
-                },
             )
         }
         state.unlinkTarget?.let { provider ->

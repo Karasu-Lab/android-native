@@ -20,21 +20,12 @@ class SecurityRepository @Inject constructor(
         val response = apiCall { authApi.securitySettings(sessionCookie.header()) }
         return SecuritySettings(
             hasPassword = response.hasPassword,
-            passkeys = response.passkeys.map {
-                Passkey(
-                    id = it.id,
-                    name = it.name,
-                    createdOn = it.createdAt?.take(10)
-                )
-            },
+            passkeys = response.passkeys.map { Passkey(id = it.id, name = it.name, createdOn = it.createdAt?.take(10)) },
         )
     }
 
     suspend fun changePassword(currentPassword: String, newPassword: String) {
-        authApi.changePassword(
-            sessionCookie.header(),
-            ChangePasswordRequest(currentPassword, newPassword)
-        ).ensureSuccess()
+        authApi.changePassword(sessionCookie.header(), ChangePasswordRequest(currentPassword, newPassword)).ensureSuccess()
     }
 
     suspend fun setPassword(newPassword: String) {

@@ -1,21 +1,13 @@
 package com.karasu256.karasulab.data
 
 import android.util.Log
-import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.data.auth.AccountAlreadySignedInException
-import com.karasu256.karasulab.data.auth.OAuthRedirect
-import com.karasu256.karasulab.data.auth.ActiveSessionCookie
-import com.karasu256.karasulab.data.auth.NativeOAuthCallbackUri
-import com.karasu256.karasulab.data.auth.NativeOAuthStateStore
 import com.karasu256.karasulab.data.auth.SessionTokenExchanger
 import com.karasu256.karasulab.data.local.SessionStore
 import com.karasu256.karasulab.data.remote.AuthApi
 import com.karasu256.karasulab.data.remote.EmailChallengeRequest
 import com.karasu256.karasulab.data.remote.ErrorBody
 import com.karasu256.karasulab.data.remote.IdTokenPayload
-import com.karasu256.karasulab.data.remote.OAuthLinkRequest
-import com.karasu256.karasulab.data.remote.OAuthLinkResponse
-import com.karasu256.karasulab.data.remote.OneTimeTokenRequest
 import com.karasu256.karasulab.data.remote.PasskeyVerifyRequest
 import com.karasu256.karasulab.data.remote.RateLimitBody
 import com.karasu256.karasulab.data.remote.SessionCookie
@@ -23,11 +15,8 @@ import com.karasu256.karasulab.data.remote.SignInLookupResponse
 import com.karasu256.karasulab.data.remote.SocialSignInRequest
 import com.karasu256.karasulab.data.remote.VerifyOtpRequest
 import com.karasu256.karasulab.data.remote.bodyString
-import com.karasu256.karasulab.data.remote.cookieHeader
 import com.karasu256.karasulab.data.remote.setCookies
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
@@ -44,14 +33,8 @@ class AuthRepository @Inject constructor(
     private val authApi: AuthApi,
     private val store: SessionStore,
     private val exchanger: SessionTokenExchanger,
-    private val sessionCookie: ActiveSessionCookie,
-    private val oauthStateStore: NativeOAuthStateStore,
     private val json: Json,
-    private val oauthRedirect: OAuthRedirect,
 ) {
-    private val _oauthCompletions = MutableSharedFlow<NativeOAuthCompletion>(extraBufferCapacity = 1)
-    val oauthCompletions: SharedFlow<NativeOAuthCompletion> = _oauthCompletions
-
     val isSignedIn: Flow<Boolean> = store.token.map { it != null }.distinctUntilChanged()
 
     suspend fun lookup(email: String): LookupOutcome {
@@ -61,24 +44,18 @@ class AuthRepository @Inject constructor(
                 response.errorBody()?.close()
                 LookupOutcome.NotFound
             }
-
             response.code() == 429 -> {
                 val seconds = response.errorBody()?.use { body ->
                     runCatching { json.decodeFromString<RateLimitBody>(body.string()).retryAfterSeconds }
                         .onFailure { Log.e("AuthRepository", "Unreadable rate limit body", it) }
                         .getOrNull()
                 } ?: response.headers()["Retry-After"]?.toIntOrNull()?.takeIf { it > 0 } ?: 60
-                LookupOutcome.RateLimited(
-                    minutes = maxOf(1, (seconds + 59) / 60),
-                    exact = seconds % 60 == 0
-                )
+                LookupOutcome.RateLimited(minutes = maxOf(1, (seconds + 59) / 60), exact = seconds % 60 == 0)
             }
-
             !response.isSuccessful -> {
                 response.errorBody()?.close()
                 throw HttpException(response)
             }
-
             else -> {
                 val parsed = json.decodeFromString<SignInLookupResponse>(response.bodyString())
                 LookupOutcome.Found(SignInLookup(parsed.sso, parsed.hasPassword, parsed.hasPasskey))
@@ -88,113 +65,15 @@ class AuthRepository @Inject constructor(
 
     suspend fun signInWithGoogle(idToken: String, rejectKnown: Boolean = false): SignInResult =
         signIn("Google", rejectKnown) {
-            authApi.signInSocial(
-                SocialSignInRequest(
-                    provider = "google",
-                    idToken = IdTokenPayload(idToken)
-                )
-            )
+            authApi.signInSocial(SocialSignInRequest(provider = "google", idToken = IdTokenPayload(idToken)))
         }
-
-    suspend fun completeSocialSignIn(
-        token: String,
-        state: String,
-        rejectKnown: Boolean
-    ): SignInResult = try {
-        val cookie = oauthRedirect.exchangeToken(token, state)
-        if (cookie == null) {
-            Log.e("AuthRepository", "The one-time token response set no session cookie")
-            SignInResult.Failed
-        } else {
-            exchangeSession(cookie, rejectKnown)
-        }
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: IOException) {
-        Log.e("AuthRepository", "Social sign-in failed on the network: $e", e)
-        SignInResult.NetworkError
-    } catch (e: Exception) {
-        Log.e("AuthRepository", "Social sign-in failed: $e", e)
-        SignInResult.Failed
-    }
-
-    fun startOAuthSignIn(providerId: String, rejectKnown: Boolean = false): String {
-        val state = NativeOAuthCallbackUri.newState()
-        val url = NativeOAuthCallbackUri.signInUrl(providerId, state, BuildConfig.AUTH_UI_HOST)
-        oauthStateStore.save(state, providerId, rejectKnown)
-        return url
-    }
-
-    suspend fun startOAuthLink(providerId: String): String {
-        val state = NativeOAuthCallbackUri.newState()
-        val callbackURL = NativeOAuthCallbackUri.callback(providerId, state)
-        val response = authApi.startOAuthLink(
-            sessionCookie.header(),
-            OAuthLinkRequest(provider = providerId, callbackURL = callbackURL),
-        )
-        val body = response.body()?.string()
-        response.errorBody()?.close()
-        if (!response.isSuccessful) throw HttpException(response)
-
-        val url = body?.let { json.decodeFromString<OAuthLinkResponse>(it).url }
-            ?: throw IOException("OAuth link initiation returned no authorization URL")
-        if (!url.startsWith("https://")) throw IOException("OAuth link initiation returned an invalid authorization URL")
-
-        oauthStateStore.save(state, providerId, rejectKnown = false, isLinking = true)
-        return url
-    }
-
-    suspend fun completeOAuthCallback(rawUri: String): SignInResult {
-        val callback = NativeOAuthCallbackUri.parse(rawUri) ?: return SignInResult.Failed
-        val pending = oauthStateStore.consume(callback.state, callback.providerId) ?: return SignInResult.Failed
-        val result = when {
-            callback.error != null -> {
-                Log.e("AuthRepository", "Native OAuth failed for ${callback.providerId}: ${callback.error}")
-                SignInResult.Failed
-            }
-            pending.isLinking -> {
-                if (callback.token == null && callback.linked == callback.providerId) SignInResult.Success else SignInResult.Failed
-            }
-            callback.token == null -> SignInResult.Failed
-            else -> completeNativeSignIn(callback.state, callback.token, pending.rejectKnown)
-        }
-        _oauthCompletions.emit(NativeOAuthCompletion(callback.providerId, result, pending.isLinking))
-        return result
-    }
-
-    private suspend fun completeNativeSignIn(state: String, token: String, rejectKnown: Boolean): SignInResult {
-        return try {
-            val response = authApi.verifyOneTimeToken(state, OneTimeTokenRequest(token))
-            response.body()?.close()
-            response.errorBody()?.close()
-            if (!response.isSuccessful) {
-                Log.e("AuthRepository", "Native OAuth token verification failed with ${response.code()}")
-                return SignInResult.Failed
-            }
-            val cookie = SessionCookie.from(response) ?: run {
-                Log.e("AuthRepository", "Native OAuth token verification returned no session cookie")
-                return SignInResult.Failed
-            }
-            exchanger.exchange(cookie, rejectKnown)?.let { SignInResult.Success } ?: SignInResult.Failed
-        } catch (e: AccountAlreadySignedInException) {
-            revoke(e.cookie)
-            SignInResult.AccountAlreadySignedIn
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            Log.e("AuthRepository", "Native OAuth session exchange failed on the network: $e", e)
-            SignInResult.NetworkError
-        } catch (e: HttpException) {
-            Log.e("AuthRepository", "Native OAuth session exchange failed with ${e.code()}", e)
-            SignInResult.Failed
-        }
-    }
 
     suspend fun requestPasskeyChallenge(): PasskeyChallenge {
         val response = authApi.generatePasskeyAuthenticateOptions()
         if (!response.isSuccessful) throw HttpException(response)
         val options = response.bodyString()
-        return PasskeyChallenge(optionsJson = options, cookieHeader = response.cookieHeader())
+        val cookieHeader = response.setCookies().joinToString("; ") { "${it.name}=${it.value}" }
+        return PasskeyChallenge(optionsJson = options, cookieHeader = cookieHeader)
     }
 
     suspend fun signInWithPasskey(
@@ -215,13 +94,7 @@ class AuthRepository @Inject constructor(
             return SignInResult.Failed
         }
         if (account.email.equals(expectedEmail.trim(), ignoreCase = true)) return result
-        revoke(
-            SessionCookie(
-                account.sessionCookieName,
-                account.sessionCookieValue,
-                account.sessionExpiresAtMs
-            )
-        )
+        revoke(SessionCookie(account.sessionCookieName, account.sessionCookieValue, account.sessionExpiresAtMs))
         store.removeAccount(account.id)
         return SignInResult.PasskeyMismatch
     }
@@ -233,15 +106,13 @@ class AuthRepository @Inject constructor(
                 response.errorBody()?.close()
                 ChallengeOutcome.RateLimited
             }
-
             !response.isSuccessful -> {
                 response.errorBody()?.close()
                 ChallengeOutcome.Failed
             }
-
             else -> {
                 response.body()?.close()
-                ChallengeOutcome.Started(EmailChallenge(response.cookieHeader()))
+                ChallengeOutcome.Started(EmailChallenge(response.setCookies().joinToString("; ") { "${it.name}=${it.value}" }))
             }
         }
     } catch (e: CancellationException) {
@@ -251,11 +122,7 @@ class AuthRepository @Inject constructor(
         ChallengeOutcome.Failed
     }
 
-    suspend fun verifyEmailOtp(
-        challenge: EmailChallenge,
-        otp: String,
-        rejectKnown: Boolean = false
-    ): SignInResult {
+    suspend fun verifyEmailOtp(challenge: EmailChallenge, otp: String, rejectKnown: Boolean = false): SignInResult {
         val response = try {
             authApi.verifyEmailOtp(challenge.cookieHeader, VerifyOtpRequest(otp.trim().uppercase()))
         } catch (e: CancellationException) {
@@ -279,11 +146,7 @@ class AuthRepository @Inject constructor(
         return finish(response, rejectKnown)
     }
 
-    private suspend fun signIn(
-        method: String,
-        rejectKnown: Boolean,
-        request: suspend () -> Response<ResponseBody>
-    ): SignInResult = try {
+    private suspend fun signIn(method: String, rejectKnown: Boolean, request: suspend () -> Response<ResponseBody>): SignInResult = try {
         val response = request()
         response.body()?.close()
         response.errorBody()?.close()
@@ -292,12 +155,10 @@ class AuthRepository @Inject constructor(
                 Log.e("AuthRepository", "$method sign-in was rejected with ${response.code()}")
                 SignInResult.InvalidCredentials
             }
-
             !response.isSuccessful -> {
                 Log.e("AuthRepository", "$method sign-in failed with ${response.code()}")
                 SignInResult.Failed
             }
-
             else -> finish(response, rejectKnown)
         }
     } catch (e: CancellationException) {
@@ -310,24 +171,12 @@ class AuthRepository @Inject constructor(
         SignInResult.Failed
     }
 
-    private suspend fun finish(
-        response: Response<ResponseBody>,
-        rejectKnown: Boolean
-    ): SignInResult {
+    private suspend fun finish(response: Response<ResponseBody>, rejectKnown: Boolean): SignInResult {
         val cookie = SessionCookie.from(response) ?: run {
-            Log.e(
-                "AuthRepository",
-                "The sign-in response set no session cookie: ${response.code()} " +
-                    "set-cookie names=${response.headers().values("Set-Cookie").map { it.substringBefore('=') }} " +
-                    "parsed names=${response.setCookies().map { it.name }}"
-            )
+            Log.e("AuthRepository", "The sign-in response set no session cookie: ${response.code()} ${response.headers()}")
             return SignInResult.Failed
         }
-        return exchangeSession(cookie, rejectKnown)
-    }
-
-    private suspend fun exchangeSession(cookie: SessionCookie, rejectKnown: Boolean): SignInResult =
-        try {
+        return try {
             exchanger.exchange(cookie, rejectKnown)?.let { SignInResult.Success } ?: run {
                 Log.e("AuthRepository", "The session could not be exchanged for a custom token")
                 SignInResult.Failed
@@ -336,6 +185,7 @@ class AuthRepository @Inject constructor(
             revoke(e.cookie)
             SignInResult.AccountAlreadySignedIn
         }
+    }
 
     private suspend fun revoke(cookie: SessionCookie) {
         try {

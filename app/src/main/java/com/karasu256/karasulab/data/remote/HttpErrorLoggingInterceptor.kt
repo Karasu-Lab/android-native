@@ -16,10 +16,7 @@ class HttpErrorLoggingInterceptor : Interceptor {
         }
         if (!response.isSuccessful) {
             val body = response.peekBody(4_096L).string()
-            val sent =
-                "cookie=${request.header("Cookie") != null} authorization=${request.header("Authorization") != null} origin=${
-                    request.header("Origin")
-                }"
+            val sent = "cookie=${request.header("Cookie") != null} authorization=${request.header("Authorization") != null} origin=${request.header("Origin")}"
             Log.e("HttpError", "${request.method} ${request.url} -> ${response.code} [$sent] $body")
         }
         return response
