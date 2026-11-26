@@ -61,6 +61,7 @@ android {
             signingConfig = signingConfigs.findByName("debug")
         }
         release {
+            manifestPlaceholders += mapOf()
             buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
             buildConfigField("String", "ACCOUNTS_HOST", "\"accounts.karasu256.com\"")
             buildConfigField("String", "COOKIE_PREFIX", "\"production\"")
