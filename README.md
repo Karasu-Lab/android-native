@@ -10,7 +10,7 @@ Native Android app for Karasu Lab.
 | `ANDROID_HOME` or `ANDROID_SDK_ROOT` | Yes | Android SDK root. Install Android SDK Platform 37.0, Android SDK Build-Tools 37.0.0, and Platform-Tools. |
 | `GNUPGHOME` | No | GPG home directory containing local encrypted signing files. Defaults to the repository's `.gpg` directory. Signing is optional. |
 | `PINENTRY_PROGRAM` | No | Path to a pinentry executable for the GPG agent. The Nix development shell sets this automatically. |
-| `SIGNING_KEY` | No | Path to the release keystore. The GitHub Actions workflow sets it to the decrypted keystore path for signed builds. |
+| `SIGNING_KEY` | No | Path to the local release keystore. For GitHub Actions, this secret contains the OpenPGP-encrypted keystore; the workflow decrypts it and sets this variable to the resulting path. |
 | `SIGNING_PASS` | No | Release keystore and key password. Set with `SIGNING_KEY`; in GitHub Actions, configure it as a secret. |
 
 Without signing material, debug builds use the standard Android debug key and
@@ -55,11 +55,9 @@ and `signing.releaseKeyPassword` properties in the untracked `local.properties`
 file.
 
 For signed GitHub Actions builds, configure these repository or organization
-Actions secrets: `ANDROID_GPG_PRIVATE_KEY` (the armored GPG private key),
-`ANDROID_GPG_PASSPHRASE` (its passphrase), `ANDROID_SIGNING_KEYSTORE_GPG` (the
-encrypted release keystore), and `SIGNING_PASS` (the keystore and key
-password). `SIGNING_KEY` is set by the workflow to the decrypted keystore path;
-it is not a secret that needs to be configured. When none of the signing
-secrets are configured, release artifacts are built unsigned. A partially
-configured set fails the main-branch signing check and reports which secret
-names are missing. Pull request and non-main builds remain unsigned.
+Actions secrets: `SIGNING_KEY` (the OpenPGP-encrypted release keystore) and
+`SIGNING_PASS` (its decryption passphrase and the keystore/key password). The
+workflow decrypts `SIGNING_KEY` and passes the resulting file path to Gradle.
+When neither secret is configured, release artifacts are built unsigned. A
+partially configured set fails the main-branch signing check and reports which
+secret name is missing. Pull request and non-main builds remain unsigned.
