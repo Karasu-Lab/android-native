@@ -29,6 +29,7 @@ class ActiveSessionRepository @Inject constructor(
     }
 
     suspend fun revoke(session: ActiveSession) {
-        authApi.revokeSession(sessionCookie.header(), RevokeSessionRequest(session.token)).ensureSuccess()
+        authApi.revokeSession(sessionCookie.header(), RevokeSessionRequest(session.token))
+            .ensureSuccess()
     }
 }
