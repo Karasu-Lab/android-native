@@ -18,7 +18,20 @@ val localProperties = Properties().apply {
 
 fun signingProperty(name: String): String? = providers.gradleProperty(name).orNull
 
-val signingStoreFile: File? = signingProperty("signing.storeFile")
+val signingKeyPath = System.getenv("SIGNING_KEY")?.takeIf(String::isNotBlank)
+val signingPass = System.getenv("SIGNING_PASS")?.takeIf(String::isNotBlank)
+require((signingKeyPath == null) == (signingPass == null)) {
+    "SIGNING_KEY and SIGNING_PASS must be provided together."
+}
+
+val environmentSigningStoreFile = signingKeyPath
+    ?.replaceFirst(Regex("^~"), Regex.escapeReplacement(System.getProperty("user.home")))
+    ?.let(::file)
+require(environmentSigningStoreFile == null || environmentSigningStoreFile.isFile) {
+    "SIGNING_KEY must point to an existing keystore file."
+}
+
+val signingStoreFile: File? = environmentSigningStoreFile ?: signingProperty("signing.storeFile")
     ?.replaceFirst(Regex("^~"), Regex.escapeReplacement(System.getProperty("user.home")))
     ?.let(::file)
     ?.takeIf { it.exists() }
@@ -111,7 +124,14 @@ android {
                 keyPassword = "android"
             }
         }
-        if (signingStoreFile != null && signingStorePassword != null && signingReleaseKeyPassword != null) {
+        if (environmentSigningStoreFile != null && signingPass != null) {
+            create("release") {
+                storeFile = environmentSigningStoreFile
+                storePassword = signingPass
+                keyAlias = "release"
+                keyPassword = signingPass
+            }
+        } else if (signingStoreFile != null && signingStorePassword != null && signingReleaseKeyPassword != null) {
             create("release") {
                 storeFile = signingStoreFile
                 storePassword = signingStorePassword
