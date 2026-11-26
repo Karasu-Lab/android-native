@@ -54,11 +54,12 @@ Gradle property and the `signing.storePassword`, `signing.debugKeyPassword`,
 and `signing.releaseKeyPassword` properties in the untracked `local.properties`
 file.
 
-For signed GitHub Actions builds, configure `SIGNING_KEY` (the OpenPGP-encrypted
-release keystore) and `SIGNING_PASS` (its decryption passphrase and the
-keystore/key password) as environment secrets in both `preview` and
+For signed GitHub Actions builds, configure `SIGNING_KEY` (the base64-encoded
+release keystore) and `SIGNING_PASS` (the keystore/key password) as environment
+secrets in both `preview` and
 `production`. Same-repository pull requests use `preview`; pushes to the
-default branch use `production`. The workflow decrypts `SIGNING_KEY` and passes
-the resulting file path to Gradle. When neither secret is configured, the
-signed job is skipped; a partially configured set fails and reports the missing
-secret name. Fork pull requests do not receive environment secrets.
+default branch use `production`. The workflow decodes `SIGNING_KEY` and places
+it at the project root as `.keystore`. When neither secret is configured, the
+signed job is skipped; a partially configured set
+fails and reports the missing secret name. Fork pull requests do not receive
+environment secrets.
