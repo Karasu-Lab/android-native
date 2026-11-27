@@ -3,157 +3,163 @@ name: Android Build
 on:
   push:
     branches:
-      - '**'
+      - main
+      - preview
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  gpg:
-    name: Import signing key
+  main-pr-source:
+    name: Validate pull request source for main
     runs-on: ubuntu-latest
-    outputs:
-      signing_key_available: ${{ steps.import.outputs.available }}
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.base_ref == github.event.repository.default_branch
     steps:
-      - name: Import GPG key when configured
-        id: import
-        env:
-          ANDROID_GPG_PRIVATE_KEY: ${{ secrets.ANDROID_GPG_PRIVATE_KEY }}
-          ANDROID_GPG_PASSPHRASE: ${{ secrets.ANDROID_GPG_PASSPHRASE }}
-          ANDROID_SIGNING_KEYSTORE_GPG: ${{ secrets.ANDROID_SIGNING_KEYSTORE_GPG }}
-          SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
-          GNUPGHOME: ${{ runner.temp }}/android-gnupg
+      - name: Require the preview branch as the source
         run: |
-          configured=0
-          for value in \
-            "$ANDROID_GPG_PRIVATE_KEY" \
-            "$ANDROID_GPG_PASSPHRASE" \
-            "$ANDROID_SIGNING_KEYSTORE_GPG" \
-            "$SIGNING_PASS"; do
-            if [ -n "$value" ]; then
-              configured=$((configured + 1))
-            fi
-          done
-
-          if [ "$configured" -eq 0 ]; then
-            echo "Signing secrets are not configured; release artifacts will be unsigned."
-            exit 0
-          fi
-
-          if [ "$configured" -ne 4 ]; then
-            echo "::error::Configure all Android signing secrets, or leave all of them unset."
+          if [ "$GITHUB_HEAD_REF" != "preview" ]; then
+            echo "::error::Pull requests to the default branch must come from the preview branch."
             exit 1
           fi
 
-          if [ "$GITHUB_EVENT_NAME" = "pull_request" ] || [ "$GITHUB_REF" != "refs/heads/main" ]; then
-            echo "Signing secrets are only used by builds of the main branch; this build will be unsigned."
-            exit 0
-          fi
-
-          install -d -m 700 "$GNUPGHOME"
-          printf '%s' "$ANDROID_GPG_PRIVATE_KEY" | gpg --batch --import
-          secret_keys="$(gpg --batch --with-colons --list-secret-keys)"
-          if ! grep -q '^sec:' <<< "$secret_keys"; then
-            echo "::error::The configured GPG key could not be imported."
-            exit 1
-          fi
-
-          echo "available=true" >> "$GITHUB_OUTPUT"
-        shell: bash
-
-      - name: Package imported GPG state
-        if: steps.import.outputs.available == 'true'
-        run: |
-          tar \
-            --exclude='S.gpg-agent*' \
-            --exclude='S.dirmngr' \
-            --exclude='*.lock' \
-            -C "$GNUPGHOME" \
-            -czf "$RUNNER_TEMP/android-gpg-state.tar.gz" .
-        env:
-          GNUPGHOME: ${{ runner.temp }}/android-gnupg
-
-      - name: Upload imported GPG state artifact
-        if: steps.import.outputs.available == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: android-gpg-state
-          path: ${{ runner.temp }}/android-gpg-state.tar.gz
-          retention-days: 1
-
-  android-signed:
-    name: Build signed release APK and AAB
+  release_please:
+    name: Compute build version
     runs-on: ubuntu-latest
-    needs: gpg
-    if: needs.gpg.outputs.signing_key_available == 'true'
+    if: >-
+      (github.event_name == 'push' &&
+      (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
+      github.ref == 'refs/heads/preview')) ||
+      (github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !startsWith(github.head_ref, 'release-please--') &&
+      !contains(github.event.pull_request.labels.*.name, 'autorelease: pending'))
+    outputs:
+      base_version: ${{ steps.version.outputs.base_version }}
+      version_name: ${{ steps.version.outputs.version_name }}
+      version_code: ${{ steps.version.outputs.version_code }}
     steps:
       - name: Check out source
         uses: actions/checkout@v7
 
+      - name: Compute build version
+        id: version
+        run: |
+          BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          {
+            echo "base_version=${BASE_VERSION}"
+            echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
+            echo "version_code=$(date +%s)"
+          } >> "$GITHUB_OUTPUT"
+
+  signing:
+    name: Check signing configuration
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ (github.event_name == 'pull_request' || github.ref == 'refs/heads/preview') && 'preview' || 'production' }}
+    outputs:
+      available: ${{ steps.check.outputs.available }}
+    steps:
+      - name: Check signing key
+        id: check
+        env:
+          SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+        run: |
+          if [ -n "$SIGNING_KEY_BASE64" ] || [ -n "$SIGNING_KEY" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "No signing key is available for this run. The signed build and the Google Play upload will be skipped."
+          fi
+
+  android-signed:
+    name: Build signed release APK and AAB
+    needs:
+      - release_please
+      - signing
+    runs-on: ubuntu-latest
+    if: >-
+      needs.signing.outputs.available == 'true' &&
+      ((github.event_name == 'push' &&
+      (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
+      github.ref == 'refs/heads/preview')) ||
+      (github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository))
+    environment:
+      name: ${{ (github.event_name == 'pull_request' || github.ref == 'refs/heads/preview') && 'preview' || 'production' }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Prepare Android signing key
+        env:
+          SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_ALIAS: ${{ secrets.SIGNING_ALIAS }}
+          ALIAS: ${{ secrets.ALIAS }}
+        run: |
+          tr -d ' \n\r' <<< '${{ secrets.SIGNING_KEY_BASE64 || secrets.SIGNING_KEY }}' | base64 -d > ./.keystore
+          STORE_PASS=$(tr -d '\n\r' <<< "${SIGNING_STORE_PASSWORD:-$SIGNING_PASS}")
+          KEY_PASS=$(tr -d '\n\r' <<< "${SIGNING_KEY_PASSWORD:-$STORE_PASS}")
+          DETECTED_ALIAS=$(keytool -list -keystore ./.keystore -storepass "${STORE_PASS}" 2>/dev/null | grep "Alias name:" | head -n1 | sed 's/.*Alias name: *//' | tr -d ' \r')
+          KEY_ALIAS=$(tr -d '\n\r' <<< "${SIGNING_ALIAS:-${ALIAS:-${DETECTED_ALIAS:-release}}}")
+          {
+            echo "signing.storePassword=${STORE_PASS}"
+            echo "signing.keyPassword=${KEY_PASS}"
+            echo "signing.Alias=${KEY_ALIAS}"
+          } > ./local.properties
+          keytool -list -v -keystore ./.keystore -storepass "${STORE_PASS}"
       - name: Set up Java
         uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
-
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
           packages: platform-tools
 
       - name: Install Android 17 preview SDK
-        run: sdkmanager --channel=3 --install "platforms;android-37.0" "build-tools;37.0.0"
+        run: sdkmanager --channel=3 --install "platforms;android-37.1" "build-tools;37.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-
-      - name: Download imported GPG state
-        if: needs.gpg.outputs.signing_key_available == 'true'
-        uses: actions/download-artifact@v7
-        with:
-          name: android-gpg-state
-          path: ${{ runner.temp }}
-
-      - name: Restore imported GPG state
-        if: needs.gpg.outputs.signing_key_available == 'true'
-        run: |
-          install -d -m 700 "$RUNNER_TEMP/android-gnupg"
-          tar -xzf "$RUNNER_TEMP/android-gpg-state.tar.gz" -C "$RUNNER_TEMP/android-gnupg"
-          chmod 700 "$RUNNER_TEMP/android-gnupg"
-
-      - name: Decrypt Android signing files
-        env:
-          ANDROID_GPG_PASSPHRASE: ${{ secrets.ANDROID_GPG_PASSPHRASE }}
-          ANDROID_SIGNING_KEYSTORE_GPG: ${{ secrets.ANDROID_SIGNING_KEYSTORE_GPG }}
-          GNUPGHOME: ${{ runner.temp }}/android-gnupg
-        run: |
-          set -euo pipefail
-          passphrase_file="$RUNNER_TEMP/android-gpg-passphrase"
-          printf '%s' "$ANDROID_GPG_PASSPHRASE" > "$passphrase_file"
-          chmod 600 "$passphrase_file"
-
-          printf '%s' "$ANDROID_SIGNING_KEYSTORE_GPG" |
-            gpg --batch --yes --pinentry-mode loopback --passphrase-file "$passphrase_file" \
-              --output "$RUNNER_TEMP/android-release.jks" --decrypt
-          rm -f "$passphrase_file"
-          test -s "$RUNNER_TEMP/android-release.jks"
 
       - name: Build signed release APK and AAB
         env:
           SIGNING_KEY: ${{ runner.temp }}/android-release.jks
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
+          VERSION_NAME: ${{ needs.release_please.outputs.version_name }}
+          VERSION_CODE: ${{ needs.release_please.outputs.version_code }}
         run: |
-          ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease
-
-      - name: Remove signing material
-        if: always()
+          ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease \
+            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+      - name: Verify signed APK and report
         run: |
-          rm -f "$RUNNER_TEMP/android-release.jks" \
-            "$RUNNER_TEMP/android-gpg-passphrase"
-          rm -rf "$RUNNER_TEMP/android-gnupg"
-
+          APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -n1)
+          REPORT=app/build/outputs/apk/release/apksigner-report.txt
+          set +e
+          "$APKSIGNER" verify --verbose --print-certs "$APK" > "$REPORT" 2>&1
+          STATUS=$?
+          set -e
+          {
+            echo "## APK signature verification"
+            echo '```'
+            cat "$REPORT"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$STATUS"
       - name: Upload signed release APK and AAB
         uses: actions/upload-artifact@v7
         with:
@@ -171,6 +177,16 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v7
 
+      - name: Compute build version
+        id: version
+        run: |
+          BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          {
+            echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
+            echo "version_code=$(date +%s)"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Set up Java
         uses: actions/setup-java@v6
         with:
@@ -183,13 +199,18 @@ jobs:
           packages: platform-tools
 
       - name: Install Android 17 preview SDK
-        run: sdkmanager --channel=3 --install "platforms;android-37.0" "build-tools;37.0.0"
+        run: sdkmanager --channel=3 --install "platforms;android-37.1" "build-tools;37.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build unsigned release APK and AAB
-        run: ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        run: |
+          ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease \
+            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
 
       - name: Upload unsigned release APK and AAB
         uses: actions/upload-artifact@v7
@@ -200,3 +221,84 @@ jobs:
             app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
+
+  release-artifacts:
+    name: Collect release artifacts
+    needs:
+      - android-signed
+      - android-unsigned
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download signed artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-signed-${{ github.sha }}
+          path: release-artifacts/signed
+      - name: Download unsigned artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-unsigned-${{ github.sha }}
+          path: release-artifacts/unsigned
+      - name: Upload combined release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-release-${{ github.sha }}
+          path: release-artifacts/**
+          if-no-files-found: error
+          retention-days: 14
+
+  google-play-release:
+    name: Release to Google Play
+    needs:
+      - android-signed
+      - release_please
+      - signing
+    runs-on: ubuntu-latest
+    if: >-
+      needs.signing.outputs.available == 'true' &&
+      github.event_name == 'push' &&
+      (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
+      github.ref == 'refs/heads/preview')
+    concurrency:
+      group: google-play-release
+      cancel-in-progress: false
+    environment:
+      name: ${{ github.ref == 'refs/heads/preview' && 'preview' || 'production' }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Download signed release bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-signed-${{ github.sha }}
+          path: app/build/outputs
+      - name: Decode Google Play Service Account Key
+        env:
+          IAM_PRIVATE_KEY: ${{ secrets.IAM_PRIVATE_KEY }}
+        run: |
+          tr -d ' \n\r' <<< '${{ secrets.IAM_PRIVATE_KEY }}' | base64 -d > ./service-account.json
+      - name: Prepare Google Play release notes
+        env:
+          BASE_VERSION: ${{ needs.release_please.outputs.base_version }}
+        run: node .github/workflows/scripts/extract-release-notes.mjs CHANGELOG.md
+      - name: Publish to Google Play
+        id: publish
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: ./service-account.json
+          packageName: ${{ vars.PACKAGE_NAME }}
+          releaseFiles: app/build/outputs/bundle/release/*.aab
+          tracks: internal
+          releaseName: ${{ needs.release_please.outputs.version_name }}
+          whatsNewDirectory: distribution/whatsnew
+
+      - name: Publish to Google Play (retry with a new edit)
+        if: ${{ failure() && steps.publish.outcome == 'failure' }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: ./service-account.json
+          packageName: ${{ vars.PACKAGE_NAME }}
+          releaseFiles: app/build/outputs/bundle/release/*.aab
+          tracks: internal
+          releaseName: ${{ needs.release_please.outputs.version_name }}
+          whatsNewDirectory: distribution/whatsnew

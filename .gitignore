@@ -18,4 +18,8 @@ local.properties
 
 .direnv/
 .gpg/
+
+app/.keystore
 /node_modules/
+
+.keystore

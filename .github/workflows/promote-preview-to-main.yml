@@ -1,0 +1,28 @@
+name: Promote preview to main
+
+on:
+  push:
+    branches:
+      - preview
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: promote-preview-to-main
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Create or update the promotion pull request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Create or update the promotion pull request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: node .github/workflows/scripts/promote-preview.mjs
