@@ -13,6 +13,7 @@ data class SignInUiState(
     val email: String = "",
     val code: String = "",
     val busy: Boolean = false,
+    val completingOAuth: Boolean = false,
     val busyMethod: ProviderMethod? = null,
     val busyProviderId: String? = null,
     val emailError: UiText? = null,

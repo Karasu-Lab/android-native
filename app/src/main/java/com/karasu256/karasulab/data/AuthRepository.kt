@@ -26,7 +26,10 @@ import com.karasu256.karasulab.data.remote.cookieHeader
 import com.karasu256.karasulab.data.remote.setCookies
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
@@ -50,6 +53,9 @@ class AuthRepository @Inject constructor(
 ) {
     private val _oauthCompletions = MutableSharedFlow<NativeOAuthCompletion>(extraBufferCapacity = 1)
     val oauthCompletions: SharedFlow<NativeOAuthCompletion> = _oauthCompletions
+
+    private val _oauthSignInInProgress = MutableStateFlow(false)
+    val oauthSignInInProgress: StateFlow<Boolean> = _oauthSignInInProgress.asStateFlow()
 
     val isSignedIn: Flow<Boolean> = store.token.map { it != null }.distinctUntilChanged()
 
@@ -163,19 +169,24 @@ class AuthRepository @Inject constructor(
     suspend fun completeOAuthCallback(rawUri: String): SignInResult {
         val callback = NativeOAuthCallbackUri.parse(rawUri) ?: return SignInResult.Failed
         val pending = oauthStateStore.consume(callback.state, callback.providerId) ?: return SignInResult.Failed
-        val result = when {
-            callback.error != null -> {
-                Log.e("AuthRepository", "Native OAuth failed for ${callback.providerId}: ${callback.error}")
-                SignInResult.Failed
+        if (!pending.isLinking) _oauthSignInInProgress.value = true
+        try {
+            val result = when {
+                callback.error != null -> {
+                    Log.e("AuthRepository", "Native OAuth failed for ${callback.providerId}: ${callback.error}")
+                    SignInResult.Failed
+                }
+                pending.isLinking -> {
+                    if (callback.token == null && callback.linked == callback.providerId) SignInResult.Success else SignInResult.Failed
+                }
+                callback.token == null -> SignInResult.Failed
+                else -> completeNativeSignIn(callback.state, callback.token, pending.rejectKnown)
             }
-            pending.isLinking -> {
-                if (callback.token == null && callback.linked == callback.providerId) SignInResult.Success else SignInResult.Failed
-            }
-            callback.token == null -> SignInResult.Failed
-            else -> completeNativeSignIn(callback.state, callback.token, pending.rejectKnown)
+            _oauthCompletions.emit(NativeOAuthCompletion(callback.providerId, result, pending.isLinking))
+            return result
+        } finally {
+            if (!pending.isLinking) _oauthSignInInProgress.value = false
         }
-        _oauthCompletions.emit(NativeOAuthCompletion(callback.providerId, result, pending.isLinking))
-        return result
     }
 
     private suspend fun completeNativeSignIn(state: String, token: String, rejectKnown: Boolean): SignInResult {
