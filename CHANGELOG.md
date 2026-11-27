@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/Karasu-Lab/android-native/compare/v1.4.0...v1.5.0) (2026-11-27)
+
+
+### Features
+
+* write google-services.json from the GOOGLE_SERVICE_JSON variable ([dbd6f4b](https://github.com/Karasu-Lab/android-native/commit/dbd6f4ba33a09a2b5394035e80cbc1e4be4b8a8a))
+
 ## [1.4.0](https://github.com/Karasu-Lab/android-native/compare/v1.3.0...v1.4.0) (2026-11-27)
 
 
