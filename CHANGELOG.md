@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.3.0](https://github.com/Karasu-Lab/android-native/compare/v1.2.2...v1.3.0) (2026-11-27)
+
+
+### Features
+
+* report errors and crashes to Firebase Crashlytics ([2ad9905](https://github.com/Karasu-Lab/android-native/commit/2ad9905955677c4384a293e47018d5ae0d1cba4d))
+* upload Crashlytics symbols for debug builds ([5ee29ae](https://github.com/Karasu-Lab/android-native/commit/5ee29ae0f986962e147f01a944dd66bd552e784f))
+
+
+### Bug Fixes
+
+* configure the Crashlytics extension with configure in the debug build type ([222e9d5](https://github.com/Karasu-Lab/android-native/commit/222e9d5f3c8c9bd23054eddbfa51f918861bdb59))
+* hook logging into Crashlytics through an extended Log class ([8261b4b](https://github.com/Karasu-Lab/android-native/commit/8261b4b74af0fa701d3a7e5418526ceb93af0ee8))
+* log the server reason when OAuth link initiation fails ([658fbe6](https://github.com/Karasu-Lab/android-native/commit/658fbe645507b528971717852d8d4898ea64203f))
+* report errors through the standard Crashlytics API instead of a wrapper ([a8080ec](https://github.com/Karasu-Lab/android-native/commit/a8080ecd9e9cfa572151b9cbd70a39e3483dfe4a))
+* use the Firebase.crashlytics accessor for Crashlytics reporting ([347ab7e](https://github.com/Karasu-Lab/android-native/commit/347ab7ee3128f079fe19beb034acdeef0bca9528))
+
 ## [1.2.2](https://github.com/Karasu-Lab/android-native/compare/v1.2.1...v1.2.2) (2026-11-27)
 
 
