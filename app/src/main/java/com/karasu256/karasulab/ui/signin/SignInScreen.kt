@@ -120,6 +120,7 @@ fun SignInScreen(
                     providersError = providersState.error,
                     onEmailChange = viewModel::onEmailChange,
                     onSubmit = viewModel::submitEmail,
+                    onGoogle = { viewModel.signInWithGoogle(credentials) },
                     onPasskey = { viewModel.signInWithPasskey(credentials, fromStep = false) },
                     onOAuth = viewModel::signInWithOAuth,
                 )
@@ -191,6 +192,7 @@ private fun EmailStep(
     providersError: UiText?,
     onEmailChange: (String) -> Unit,
     onSubmit: () -> Unit,
+    onGoogle: () -> Unit,
     onPasskey: () -> Unit,
     onOAuth: (String) -> Unit,
 ) {
@@ -220,6 +222,7 @@ private fun EmailStep(
         } else {
             ProviderButtons(
                 providers = providers,
+                onGoogle = onGoogle,
                 onPasskey = onPasskey,
                 onOAuth = onOAuth,
                 enabled = !state.busy,

@@ -13,6 +13,9 @@ import retrofit2.http.Query
 import retrofit2.http.Url
 
 interface AuthApi {
+    @POST("api/auth/sign-in/social")
+    suspend fun signInSocial(@Body body: SocialSignInRequest): Response<ResponseBody>
+
     @GET
     suspend fun verifyMinecraft(
         @Url url: String,
@@ -149,6 +152,12 @@ interface AuthApi {
     suspend fun unlinkAccount(
         @Header("Cookie") cookie: String,
         @Body body: UnlinkAccountRequest,
+    ): Response<ResponseBody>
+
+    @POST("api/auth/link-social")
+    suspend fun linkSocial(
+        @Header("Cookie") cookie: String,
+        @Body body: LinkSocialRequest,
     ): Response<ResponseBody>
 
     @GET("api/auth/list-sessions")

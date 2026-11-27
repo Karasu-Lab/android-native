@@ -48,6 +48,7 @@
     <string name="error_rate_limited_within">レート制限に達しました。%1$d分以内にもう一度お試しください</string>
     <string name="error_rate_limited_less_than">レート制限に達しました。%1$d分未満にもう一度お試しください</string>
     <string name="error_account_already_signed_in">このアカウントは既にこのデバイスでサインインしています</string>
+    <string name="error_google_failed">Google でのサインインに失敗しました</string>
     <string name="error_sso_unsupported">このメールアドレスは SSO でのサインインが必要です。ブラウザからサインインしてください。</string>
     <string name="error_network">ネットワークに接続できませんでした</string>
     <string name="error_unknown">エラーが発生しました。もう一度お試しください。</string>

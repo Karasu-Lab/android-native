@@ -4,6 +4,7 @@ import com.karasu256.karasulab.logging.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.karasu256.karasulab.R
+import com.karasu256.karasulab.auth.CredentialProvider
 import com.karasu256.karasulab.data.AuthRepository
 import com.karasu256.karasulab.data.LinkedProviderRepository
 import com.karasu256.karasulab.data.OAuthProvider
@@ -116,18 +117,37 @@ class LinkedAccountsViewModel @Inject constructor(
 
     fun messageShown() = _uiState.update { it.copy(message = null) }
 
-    fun link(provider: OAuthProvider) {
+    fun link(provider: OAuthProvider, credentials: CredentialProvider) {
         if (_uiState.value.busyProviderId != null) return
         if (provider.id == "minecraft") {
             minecraftProvider = provider
             _uiState.update { it.copy(minecraftDialog = true, minecraftError = null) }
             return
         }
-        linkOAuth(provider)
+        if (provider.id == "google") linkGoogle(provider, credentials) else linkOAuth(provider)
     }
 
     fun profileTitle(provider: OAuthProvider, profile: CachedProviderProfile?): String =
         profile?.name ?: profile?.description ?: provider.label
+
+    private fun linkGoogle(provider: OAuthProvider, credentials: CredentialProvider) {
+        _uiState.update { it.copy(busyProviderId = provider.id) }
+        viewModelScope.launch {
+            val result = attempt {
+                val idToken = credentials.requestGoogleIdToken() ?: return@attempt false
+                linkedProviderRepository.linkGoogle(idToken)
+                true
+            }
+            result.onSuccess { linked ->
+                if (linked) linkSucceeded(provider)
+            }.onFailure { error ->
+                Log.e("LinkedAccountsViewModel", "Linking ${provider.id} failed", error)
+                linkFailed()
+            }
+            refreshProvider(provider.id)
+            _uiState.update { it.copy(busyProviderId = null) }
+        }
+    }
 
     fun addressCopied() = _uiState.update { it.copy(message = UiText(R.string.minecraft_verify_address_copied)) }
 
