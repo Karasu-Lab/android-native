@@ -1,0 +1,107 @@
+name: Android Debug Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-debug:
+    name: Build preview-signed debug APK
+    runs-on: ubuntu-latest
+    environment:
+      name: preview
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Write google-services.json for this variant
+        env:
+          GOOGLE_SERVICE_JSON: ${{ vars.GOOGLE_SERVICE_JSON }}
+        run: |
+          if [ -n "${GOOGLE_SERVICE_JSON}" ]; then
+            printf '%s' "${GOOGLE_SERVICE_JSON}" > app/google-services.json
+            jq -e . app/google-services.json > /dev/null
+          fi
+
+      - name: Prepare Android signing key
+        env:
+          SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_ALIAS: ${{ secrets.SIGNING_ALIAS }}
+          ALIAS: ${{ secrets.ALIAS }}
+        run: |
+          tr -d ' \n\r' <<< '${{ secrets.SIGNING_KEY_BASE64 || secrets.SIGNING_KEY }}' | base64 -d > ./.keystore
+          STORE_PASS=$(tr -d '\n\r' <<< "${SIGNING_STORE_PASSWORD:-$SIGNING_PASS}")
+          KEY_PASS=$(tr -d '\n\r' <<< "${SIGNING_KEY_PASSWORD:-$STORE_PASS}")
+          DETECTED_ALIAS=$(keytool -list -keystore ./.keystore -storepass "${STORE_PASS}" 2>/dev/null | grep "Alias name:" | head -n1 | sed 's/.*Alias name: *//' | tr -d ' \r')
+          KEY_ALIAS=$(tr -d '\n\r' <<< "${SIGNING_ALIAS:-${ALIAS:-${DETECTED_ALIAS:-release}}}")
+          {
+            echo "signing.storePassword=${STORE_PASS}"
+            echo "signing.keyPassword=${KEY_PASS}"
+            echo "signing.Alias=${KEY_ALIAS}"
+          } > ./local.properties
+          keytool -list -v -keystore ./.keystore -storepass "${STORE_PASS}"
+
+      - name: Compute build version
+        id: version
+        run: |
+          BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          {
+            echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
+            echo "version_code=$(date +%s)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+
+      - name: Install Android 17 preview SDK
+        run: sdkmanager --channel=3 --install "platforms;android-37.1" "build-tools;37.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build preview-signed debug APK
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        run: |
+          ./gradlew --no-daemon :app:assembleDebug \
+            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+
+      - name: Verify signed APK and report
+        run: |
+          APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
+          APK=$(ls app/build/outputs/apk/debug/*.apk | head -n1)
+          REPORT=app/build/outputs/apk/debug/apksigner-report.txt
+          set +e
+          "$APKSIGNER" verify --verbose --print-certs "$APK" > "$REPORT" 2>&1
+          STATUS=$?
+          set -e
+          {
+            echo "## APK signature verification"
+            echo '```'
+            cat "$REPORT"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$STATUS"
+
+      - name: Upload preview-signed debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-debug-signed-${{ github.sha }}
+          path: |
+            app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14

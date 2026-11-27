@@ -1,6 +1,6 @@
 package com.karasu256.karasulab.ui.theme
 
-import android.util.Log
+import com.karasu256.karasulab.logging.Log
 import com.karasu256.karasulab.R
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

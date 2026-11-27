@@ -2,8 +2,14 @@ package com.karasu256.karasulab.ui.signin
 
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,14 +30,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karasu256.karasulab.R
 import com.karasu256.karasulab.auth.CredentialAuthenticator
+import com.karasu256.karasulab.data.OAuthProvider
+import com.karasu256.karasulab.ui.UiText
 import com.karasu256.karasulab.ui.component.AuthFrame
 import com.karasu256.karasulab.ui.component.CodeField
 import com.karasu256.karasulab.ui.component.EmailField
@@ -39,6 +47,7 @@ import com.karasu256.karasulab.ui.component.FormError
 import com.karasu256.karasulab.ui.component.OrDivider
 import com.karasu256.karasulab.ui.component.ProviderButtons
 import com.karasu256.karasulab.ui.component.StepHost
+import com.karasu256.karasulab.ui.providers.OAuthProvidersViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.NavGraphs
@@ -52,11 +61,16 @@ fun SignInScreen(
     addAccount: Boolean = false,
     switchToNewAccount: Boolean = false,
     viewModel: SignInViewModel = hiltViewModel(),
+    providersViewModel: OAuthProvidersViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val providersState by providersViewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
-    val uriHandler = LocalUriHandler.current
     val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
+
+    LaunchedEffect(providersViewModel) {
+        providersViewModel.load("signIn")
+    }
 
     LaunchedEffect(addAccount, switchToNewAccount) {
         viewModel.configure(
@@ -78,11 +92,13 @@ fun SignInScreen(
         }
     }
     LaunchedEffect(viewModel) {
-        viewModel.openBrowser.collect(uriHandler::openUri)
+        viewModel.openBrowser.collect { CustomTabsIntent.Builder().build().launchUrl(checkNotNull(activity), it.toUri()) }
     }
     BackHandler(enabled = state.step != SignInStep.Email) { viewModel.goBack() }
     BackHandler(enabled = state.busy) {}
+    BackHandler(enabled = state.completingOAuth) {}
 
+    Box(modifier = Modifier.fillMaxSize()) {
     AuthFrame(
         busy = state.busy,
         onBack = when {
@@ -99,6 +115,9 @@ fun SignInScreen(
             when (step) {
                 SignInStep.Email -> EmailStep(
                     state = state,
+                    providers = providersState.oauthProviders + listOfNotNull(providersState.passkeyProvider),
+                    providersLoading = providersState.loading,
+                    providersError = providersState.error,
                     onEmailChange = viewModel::onEmailChange,
                     onSubmit = viewModel::submitEmail,
                     onGoogle = { viewModel.signInWithGoogle(credentials) },
@@ -122,6 +141,31 @@ fun SignInScreen(
             }
         }
     }
+
+    if (state.completingOAuth) {
+        SigningInOverlay()
+    }
+    }
+}
+
+@Composable
+private fun SigningInOverlay() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator()
+            Text(
+                text = stringResource(R.string.signing_in),
+                modifier = Modifier.padding(top = 16.dp),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
+    }
 }
 
 @Composable
@@ -143,6 +187,9 @@ private fun StepHeader(title: String, supporting: String? = null) {
 @Composable
 private fun EmailStep(
     state: SignInUiState,
+    providers: List<OAuthProvider>,
+    providersLoading: Boolean,
+    providersError: UiText?,
     onEmailChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onGoogle: () -> Unit,
@@ -170,11 +217,11 @@ private fun EmailStep(
         Spacer(Modifier.height(32.dp))
         OrDivider()
         Spacer(Modifier.height(24.dp))
-        if (state.providersLoading) {
+        if (providersLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         } else {
             ProviderButtons(
-                providers = state.providers,
+                providers = providers,
                 onGoogle = onGoogle,
                 onPasskey = onPasskey,
                 onOAuth = onOAuth,
@@ -183,7 +230,7 @@ private fun EmailStep(
                 busyProviderId = state.busyProviderId,
             )
         }
-        state.providersError?.let { FormError(text = it.resolve(), modifier = Modifier.padding(top = 12.dp)) }
+        providersError?.let { FormError(text = it.resolve(), modifier = Modifier.padding(top = 12.dp)) }
     }
 }
 

@@ -1,3 +1,4 @@
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.util.Properties
 
 plugins {
@@ -40,6 +41,11 @@ android {
         buildConfigField("String", "MC_AUTH_ADDRESS", "\"mc-auth.karasu256.com\"")
         buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
         buildConfigField("String", "AUTH_UI_HOST", "\"auth.karasu256.com\"")
+        buildConfigField(
+            "String",
+            "GOOGLE_SERVER_CLIENT_ID",
+            "\"291377837692-haa4bsiure8qm70ionnaamb356qf6uca.apps.googleusercontent.com\""
+        )
     }
 
     signingConfigs {
@@ -67,18 +73,36 @@ android {
 
     buildTypes {
         debug {
+            buildConfigField("String", "API_HOST", "\"dev-api.karasu256.com\"")
             buildConfigField("String", "AUTH_HOST", "\"dev-api-auth.karasu256.com\"")
+            buildConfigField(
+                "String",
+                "GOOGLE_SERVER_CLIENT_ID",
+                "\"521494519407-kufmdvbthsglk6bgiqve72hlbnd4nak2.apps.googleusercontent.com\""
+            )
             buildConfigField("String", "ACCOUNTS_HOST", "\"dev-accounts.karasu256.com\"")
             buildConfigField("String", "COOKIE_PREFIX", "\"preview\"")
             buildConfigField("String", "MC_AUTH_HOST", "\"dev-mc-auth.karasu256.com\"")
             buildConfigField("String", "CDN_URL", "\"https://dev-cdn.karasu256.com/\"")
             manifestPlaceholders["accountsHost"] = "dev-accounts.karasu256.com"
             manifestPlaceholders["accountsWildcardHost"] = "*.dev-accounts.karasu256.com"
-            signingConfig = signingConfigs.findByName("debug")
+            val keystoreFile = rootProject.file(".keystore")
+            if (keystoreFile.exists()) {
+                signingConfig = signingConfigs.findByName("release")
+            }
+            configure<CrashlyticsExtension> {
+                nativeSymbolUploadEnabled = true
+            }
         }
         release {
             manifestPlaceholders += mapOf()
+            buildConfigField("String", "API_HOST", "\"api.karasu256.com\"")
             buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
+            buildConfigField(
+                "String",
+                "GOOGLE_SERVER_CLIENT_ID",
+                "\"291377837692-haa4bsiure8qm70ionnaamb356qf6uca.apps.googleusercontent.com\""
+            )
             buildConfigField("String", "ACCOUNTS_HOST", "\"accounts.karasu256.com\"")
             buildConfigField("String", "COOKIE_PREFIX", "\"production\"")
             buildConfigField("String", "MC_AUTH_HOST", "\"mc-auth.karasu256.com\"")
@@ -121,6 +145,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.coil.svg)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.compose.destinations.core)

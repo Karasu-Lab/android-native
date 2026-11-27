@@ -2,5 +2,5 @@
 
 .keystore
 
-release/
-debug/
+/release/
+/debug/

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Security
@@ -32,7 +31,6 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ActiveSessionsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.AuthorizedAppsScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.DebugScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.LinkedAccountsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ProfileScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SecurityScreenDestination
@@ -100,13 +98,7 @@ fun SettingsScreen(
             onClick = { navigator.navigate(ActiveSessionsScreenDestination) },
         )
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-        SettingsItem(
-            title = stringResource(R.string.settings_debug),
-            description = stringResource(R.string.settings_debug_description),
-            leading = { IconTile(Icons.Filled.BugReport) },
-            onClick = { navigator.navigate(DebugScreenDestination) },
-        )
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        DebugSettingsEntry(navigator)
         SettingsItem(
             title = stringResource(R.string.settings_sign_out),
             leading = { IconTile(Icons.AutoMirrored.Filled.Logout, Tone.Error) },

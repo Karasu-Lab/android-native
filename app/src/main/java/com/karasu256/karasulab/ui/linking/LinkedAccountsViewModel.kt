@@ -1,6 +1,6 @@
 package com.karasu256.karasulab.ui.linking
 
-import android.util.Log
+import com.karasu256.karasulab.logging.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.karasu256.karasulab.R
@@ -8,7 +8,6 @@ import com.karasu256.karasulab.auth.CredentialProvider
 import com.karasu256.karasulab.data.AuthRepository
 import com.karasu256.karasulab.data.LinkedProviderRepository
 import com.karasu256.karasulab.data.OAuthProvider
-import com.karasu256.karasulab.data.OAuthProviderRepository
 import com.karasu256.karasulab.data.ProviderProfile
 import com.karasu256.karasulab.data.SignInResult
 import com.karasu256.karasulab.data.SecurityRepository
@@ -30,7 +29,6 @@ import javax.inject.Inject
 data class LinkedAccountsUiState(
     val loading: Boolean = true,
     val loadFailed: Boolean = false,
-    val providers: List<OAuthProvider> = emptyList(),
     val profiles: Map<String, ProviderProfile?> = emptyMap(),
     val hasPasskeys: Boolean = false,
     val hasPassword: Boolean = false,
@@ -50,13 +48,19 @@ class LinkedAccountsViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val linkedProviderRepository: LinkedProviderRepository,
     private val securityRepository: SecurityRepository,
-    private val oauthProviderRepository: OAuthProviderRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LinkedAccountsUiState())
     val uiState: StateFlow<LinkedAccountsUiState> = _uiState.asStateFlow()
 
     private val _openBrowser = Channel<String>(Channel.BUFFERED)
     val openBrowser: Flow<String> = _openBrowser.receiveAsFlow()
+
+    private var providerLabels: Map<String, String> = emptyMap()
+    private var minecraftProvider: OAuthProvider? = null
+
+    fun updateProviders(providers: List<OAuthProvider>) {
+        providerLabels = providers.associate { it.id to it.label }
+    }
 
     init {
         viewModelScope.launch {
@@ -65,8 +69,7 @@ class LinkedAccountsViewModel @Inject constructor(
                 _uiState.update { it.copy(busyProviderId = null) }
                 if (completion.result == SignInResult.Success) {
                     refreshProvider(completion.providerId)
-                    val label = _uiState.value.providers.firstOrNull { it.id == completion.providerId }?.label
-                        ?: completion.providerId
+                    val label = providerLabels[completion.providerId] ?: completion.providerId
                     _uiState.update { it.copy(message = UiText(R.string.connections_linked, listOf(label))) }
                 } else {
                     Log.e("LinkedAccountsViewModel", "OAuth link failed for ${completion.providerId}: ${completion.result}")
@@ -81,12 +84,10 @@ class LinkedAccountsViewModel @Inject constructor(
         viewModelScope.launch {
             val profiles = attempt { linkedProviderRepository.profiles() }
             val security = attempt { securityRepository.settings() }
-            val providers = attempt { oauthProviderRepository.list("link") }
             _uiState.update { state ->
                 state.copy(
                     loading = false,
-                    loadFailed = profiles.isFailure || providers.isFailure,
-                    providers = providers.getOrDefault(state.providers),
+                    loadFailed = profiles.isFailure,
                     profiles = profiles.getOrDefault(state.profiles),
                     hasPasskeys = security.getOrNull()?.passkeys?.isNotEmpty() ?: state.hasPasskeys,
                     hasPassword = security.getOrNull()?.hasPassword ?: state.hasPassword,
@@ -108,6 +109,7 @@ class LinkedAccountsViewModel @Inject constructor(
     fun link(provider: OAuthProvider, credentials: CredentialProvider) {
         if (_uiState.value.busyProviderId != null) return
         if (provider.id == "minecraft") {
+            minecraftProvider = provider
             _uiState.update { it.copy(minecraftDialog = true, minecraftError = null) }
             return
         }
@@ -143,7 +145,7 @@ class LinkedAccountsViewModel @Inject constructor(
     fun dismissMinecraft() = _uiState.update { it.copy(minecraftDialog = false, minecraftError = null) }
 
     fun verifyMinecraft(code: String) {
-        val provider = _uiState.value.providers.firstOrNull { it.id == "minecraft" } ?: return
+        val provider = minecraftProvider ?: return
         _uiState.update { it.copy(busyProviderId = provider.id, minecraftError = null) }
         viewModelScope.launch {
             attempt { linkedProviderRepository.verifyMinecraft(code) }
