@@ -34,14 +34,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.R
 import com.karasu256.karasulab.auth.CredentialAuthenticator
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
+import coil3.compose.AsyncImage
 import com.karasu256.karasulab.ui.component.ConfirmDialog
 import com.karasu256.karasulab.ui.component.ErrorRetry
 import com.karasu256.karasulab.ui.component.MinecraftAvatar
-import com.karasu256.karasulab.ui.component.ProviderIcon
 import com.karasu256.karasulab.ui.component.SettingsGroup
 import com.karasu256.karasulab.ui.component.SettingsItem
 import com.karasu256.karasulab.ui.component.UserAvatar
-import com.karasu256.karasulab.ui.providers.OAuthProvidersViewModel
 import com.karasu256.karasulab.ui.settings.SettingsScaffold
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -52,11 +57,9 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 fun LinkedAccountsScreen(
     navigator: DestinationsNavigator,
     viewModel: LinkedAccountsViewModel = hiltViewModel(),
-    providersViewModel: OAuthProvidersViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val providersState by providersViewModel.uiState.collectAsStateWithLifecycle()
-    val providers = providersState.oauthProviders + listOfNotNull(providersState.minecraftProvider)
+    val providers = state.clients
     val activity = LocalActivity.current
     val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -64,10 +67,6 @@ fun LinkedAccountsScreen(
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.load()
-        providersViewModel.load("link")
-    }
-    LaunchedEffect(providers) {
-        viewModel.updateProviders(providers)
     }
     LaunchedEffect(viewModel) {
         viewModel.openBrowser.collect { CustomTabsIntent.Builder().build().launchUrl(checkNotNull(activity), it.toUri()) }
@@ -85,20 +84,17 @@ fun LinkedAccountsScreen(
         loading = state.loading,
         snackbarHostState = snackbarHostState,
     ) {
-        if (state.loadFailed || providersState.error != null) {
+        if (state.loadFailed) {
             ErrorRetry(
                 message = stringResource(R.string.load_error),
-                onRetry = {
-                    viewModel.load()
-                    providersViewModel.load("link")
-                },
+                onRetry = { viewModel.load() },
             )
         }
         SettingsGroup {
             providers.forEach { provider ->
                 item {
-                    val profile = state.profiles[provider.id]
-                    val busy = state.busyProviderId == provider.id
+                    val profile = state.profiles[provider.providerId]
+                    val busy = state.busyProviderId == provider.providerId
                     SettingsItem(
                         title = viewModel.profileTitle(provider, profile),
                         description = if (profile != null) {
@@ -107,12 +103,25 @@ fun LinkedAccountsScreen(
                             stringResource(R.string.connections_not_linked)
                         },
                         leading = {
-                            if (provider.id == "minecraft" && profile?.iconUrl != null) {
+                            if (provider.providerId == "minecraft" && profile?.iconUrl != null) {
                                 MinecraftAvatar(textureUrl = profile.iconUrl)
                             } else if (profile?.iconUrl != null) {
-                                UserAvatar(id = provider.id, label = provider.label, imageUrl = profile.iconUrl)
+                                UserAvatar(id = provider.providerId, label = provider.label, imageUrl = profile.iconUrl)
                             } else {
-                                ProviderIcon(provider = provider)
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    AsyncImage(
+                                        model = provider.iconUrl,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp),
+                                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
+                                    )
+                                }
                             }
                         },
                         trailing = {
@@ -124,7 +133,7 @@ fun LinkedAccountsScreen(
                                         viewModel.link(provider, credentials)
                                     }
                                 },
-                                enabled = !busy && if (profile != null) state.canUnlink else state.linkable[provider.id] != false,
+                                enabled = !busy && if (profile != null) state.canUnlink else state.linkable[provider.providerId] != false,
                             ) {
                                 if (busy) {
                                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)

@@ -28,7 +28,21 @@ private data class ProviderLinkStateEvent(
     val linkable: Boolean,
 )
 
+@Serializable
+data class ProviderClientResponse(
+    val providerId: String,
+    val clientId: String? = null,
+    val iconPath: String,
+)
+
+@Serializable
+private data class ProviderClientsEvent(
+    val clients: List<ProviderClientResponse>,
+)
+
 sealed interface ProviderStreamEvent {
+    data class Clients(val clients: List<ProviderClientResponse>) : ProviderStreamEvent
+
     data class Profile(val providerId: String, val profile: ProviderProfileResponse?) : ProviderStreamEvent
 
     data class LinkState(val providerId: String, val providerUserId: String, val linkable: Boolean) : ProviderStreamEvent
@@ -59,6 +73,10 @@ class ProviderStreamClient @Inject constructor(
                         data.clear()
                         if (payload.isNotEmpty()) {
                             when (event) {
+                                "clients" -> {
+                                    val parsed = json.decodeFromString<ProviderClientsEvent>(payload)
+                                    emit(ProviderStreamEvent.Clients(parsed.clients))
+                                }
                                 "profile" -> {
                                     val parsed = json.decodeFromString<ProviderProfileEvent>(payload)
                                     emit(ProviderStreamEvent.Profile(parsed.providerId, parsed.profile))

@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.karasu256.karasulab.R
 import com.karasu256.karasulab.auth.CredentialProvider
+import com.karasu256.karasulab.auth.LoginStart
+import com.karasu256.karasulab.auth.ProviderLoginFlow
 import com.karasu256.karasulab.data.AccountRepository
 import com.karasu256.karasulab.data.AuthRepository
 import com.karasu256.karasulab.data.ChallengeOutcome
@@ -49,6 +51,7 @@ class SignInViewModel @Inject constructor(
     private val _openBrowser = Channel<String>(Channel.BUFFERED)
     val openBrowser: Flow<String> = _openBrowser.receiveAsFlow()
 
+    private var activeFlow: ProviderLoginFlow? = null
     private var challenge: EmailChallenge? = null
     private var previousAccountId: String? = null
     private var switchToNewAccount = false
@@ -124,32 +127,33 @@ class SignInViewModel @Inject constructor(
 
     fun signInWithPasskey(credentials: CredentialProvider, fromStep: Boolean) {
         val email = _uiState.value.email.takeIf { fromStep }
+        val flow = ProviderLoginFlow.forProvider("passkey", authRepository, email)
         launchBusy(if (fromStep) null else ProviderMethod.Passkey) {
             if (fromStep) _uiState.update { it.copy(passkeyError = null) }
-            val result = attempt {
-                val passkeyChallenge = authRepository.requestPasskeyChallenge()
-                val assertion = credentials.requestPasskeyAssertion(passkeyChallenge.optionsJson) ?: return@attempt null
-                authRepository.signInWithPasskey(passkeyChallenge, assertion, email, _uiState.value.addingAccount)
-            }.getOrElse { error ->
-                reportPasskeyError(fromStep, error.toUiText(R.string.error_passkey_failed))
-                return@launchBusy
-            } ?: return@launchBusy
-            result.toError(R.string.error_passkey_failed)?.let { reportPasskeyError(fromStep, it) }
-            if (result == SignInResult.Success) finish()
+            val start = attempt { flow.start("passkey", _uiState.value.addingAccount, credentials) }
+                .getOrElse { error ->
+                    reportPasskeyError(fromStep, error.toUiText(R.string.error_passkey_failed))
+                    return@launchBusy
+                }
+            if (start is LoginStart.Completed) {
+                start.result.toError(R.string.error_passkey_failed)?.let { reportPasskeyError(fromStep, it) }
+                if (start.result == SignInResult.Success) finish()
+            }
         }
     }
 
     fun signInWithGoogle(credentials: CredentialProvider) {
+        val flow = ProviderLoginFlow.forProvider("google", authRepository)
         launchBusy(ProviderMethod.Google) {
-            val result = attempt {
-                val idToken = credentials.requestGoogleIdToken() ?: return@attempt null
-                authRepository.signInWithGoogle(idToken, _uiState.value.addingAccount)
-            }.getOrElse { error ->
-                _uiState.update { it.copy(emailError = error.toUiText(R.string.error_google_failed)) }
-                return@launchBusy
-            } ?: return@launchBusy
-            result.toError(R.string.error_google_failed)?.let { error -> _uiState.update { it.copy(emailError = error) } }
-            if (result == SignInResult.Success) finish()
+            val start = attempt { flow.start("google", _uiState.value.addingAccount, credentials) }
+                .getOrElse { error ->
+                    _uiState.update { it.copy(emailError = error.toUiText(R.string.error_google_failed)) }
+                    return@launchBusy
+                }
+            if (start is LoginStart.Completed) {
+                start.result.toError(R.string.error_google_failed)?.let { error -> _uiState.update { it.copy(emailError = error) } }
+                if (start.result == SignInResult.Success) finish()
+            }
         }
     }
 
@@ -162,7 +166,8 @@ class SignInViewModel @Inject constructor(
             return
         }
         launchBusy {
-            val outcome = authRepository.completeSocialSignIn(token, state, _uiState.value.addingAccount)
+            val flow = activeFlow ?: ProviderLoginFlow(authRepository)
+            val outcome = flow.finish(token, state, _uiState.value.addingAccount)
             outcome.toError(R.string.error_oauth_failed)?.let(::failOAuth)
             if (outcome == SignInResult.Success) finish()
         }
@@ -171,15 +176,17 @@ class SignInViewModel @Inject constructor(
     private fun failOAuth(error: UiText = UiText(R.string.error_oauth_failed)) =
         _uiState.update { it.copy(emailError = error, completingOAuth = false) }
 
-    fun signInWithOAuth(providerId: String) {
+    fun signInWithOAuth(providerId: String, credentials: CredentialProvider) {
+        val flow = ProviderLoginFlow.forProvider(providerId, authRepository)
+        activeFlow = flow
         launchBusy(providerId = providerId) {
-            val url = attempt { authRepository.startOAuthSignIn(providerId, _uiState.value.addingAccount) }
+            val start = attempt { flow.start(providerId, _uiState.value.addingAccount, credentials) }
                 .getOrElse { error ->
                     Log.e("SignInViewModel", "Could not start $providerId sign-in", error)
                     _uiState.update { it.copy(emailError = error.toUiText(R.string.error_unknown)) }
                     return@launchBusy
                 }
-            _openBrowser.send(url)
+            if (start is LoginStart.Browser) _openBrowser.send(start.url)
         }
     }
     fun submitCode() {

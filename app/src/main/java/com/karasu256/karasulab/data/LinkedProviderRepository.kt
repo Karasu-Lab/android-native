@@ -35,6 +35,7 @@ class LinkedProviderRepository @Inject constructor(
     private val json: Json,
     private val streamClient: ProviderStreamClient,
     private val profileCache: ProviderProfileCacheRepository,
+    private val clientRepository: ProviderClientRepository,
 ) {
     private val _linkable = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     val linkable: StateFlow<Map<String, Boolean>> = _linkable.asStateFlow()
@@ -58,6 +59,7 @@ class LinkedProviderRepository @Inject constructor(
             try {
                 streamClient.events().collect { event ->
                     when (event) {
+                        is ProviderStreamEvent.Clients -> clientRepository.apply(event.clients)
                         is ProviderStreamEvent.Profile -> profileCache.apply(
                             accountRepository.activeAccountId(),
                             event.providerId,
