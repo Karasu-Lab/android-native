@@ -100,15 +100,15 @@ fun LinkedAccountsScreen(
                     SettingsItem(
                         title = viewModel.profileTitle(provider, profile),
                         description = if (profile != null) {
-                            profile.email ?: profile.accountId.orEmpty()
+                            profile.description.orEmpty()
                         } else {
                             stringResource(R.string.connections_not_linked)
                         },
                         leading = {
-                            if (provider.id == "minecraft" && profile?.avatarUrl != null) {
-                                MinecraftAvatar(textureUrl = profile.avatarUrl)
-                            } else if (profile?.avatarUrl != null) {
-                                UserAvatar(id = provider.id, label = provider.label, imageUrl = profile.avatarUrl)
+                            if (provider.id == "minecraft" && profile?.iconUrl != null) {
+                                MinecraftAvatar(textureUrl = profile.iconUrl)
+                            } else if (profile?.iconUrl != null) {
+                                UserAvatar(id = provider.id, label = provider.label, imageUrl = profile.iconUrl)
                             } else {
                                 ProviderIcon(provider = provider)
                             }
@@ -122,7 +122,7 @@ fun LinkedAccountsScreen(
                                         viewModel.link(provider)
                                     }
                                 },
-                                enabled = state.profiles.isNotEmpty() && !busy && state.busyProviderId == null && (profile == null || state.canUnlink),
+                                enabled = state.profiles.isNotEmpty() && !busy && state.busyProviderId == null && (profile == null || state.canUnlink) && (profile != null || state.linkable[provider.id] != false),
                             ) {
                                 if (busy) {
                                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
