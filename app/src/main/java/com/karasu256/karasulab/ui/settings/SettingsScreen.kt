@@ -8,8 +8,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,8 +24,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.R
 import com.karasu256.karasulab.ui.component.IconTile
+import com.karasu256.karasulab.ui.component.SectionHeader
+import com.karasu256.karasulab.ui.component.SettingsGroup
 import com.karasu256.karasulab.ui.component.SettingsItem
 import com.karasu256.karasulab.ui.component.Tone
 import com.karasu256.karasulab.ui.component.UserAvatar
@@ -77,26 +82,64 @@ fun SettingsScreen(
             }
             HorizontalDivider()
         }
-        SettingsItem(
-            title = stringResource(R.string.settings_security),
-            leading = { IconTile(Icons.Filled.Security) },
-            onClick = { navigator.navigate(SecurityScreenDestination) },
-        )
-        SettingsItem(
-            title = stringResource(R.string.settings_connections),
-            leading = { IconTile(Icons.Filled.Link) },
-            onClick = { navigator.navigate(LinkedAccountsScreenDestination) },
-        )
-        SettingsItem(
-            title = stringResource(R.string.settings_authorized_apps),
-            leading = { IconTile(Icons.Filled.Apps) },
-            onClick = { navigator.navigate(AuthorizedAppsScreenDestination) },
-        )
-        SettingsItem(
-            title = stringResource(R.string.settings_active_sessions),
-            leading = { IconTile(Icons.Filled.Devices) },
-            onClick = { navigator.navigate(ActiveSessionsScreenDestination) },
-        )
+        SectionHeader(stringResource(R.string.settings_section_general))
+        SettingsGroup {
+            item {
+                SettingsItem(
+                    title = stringResource(R.string.settings_connections),
+                    leading = { IconTile(Icons.Filled.Link) },
+                    onClick = { navigator.navigate(LinkedAccountsScreenDestination) },
+                )
+            }
+            item {
+                SettingsItem(
+                    title = stringResource(R.string.settings_authorized_apps),
+                    leading = { IconTile(Icons.Filled.Apps) },
+                    onClick = { navigator.navigate(AuthorizedAppsScreenDestination) },
+                )
+            }
+        }
+        SectionHeader(stringResource(R.string.settings_security))
+        SettingsGroup {
+            item {
+                SettingsItem(
+                    title = stringResource(R.string.settings_security),
+                    leading = { IconTile(Icons.Filled.Security) },
+                    onClick = { navigator.navigate(SecurityScreenDestination) },
+                )
+            }
+            item {
+                SettingsItem(
+                    title = stringResource(R.string.settings_active_sessions),
+                    leading = { IconTile(Icons.Filled.Devices) },
+                    onClick = { navigator.navigate(ActiveSessionsScreenDestination) },
+                )
+            }
+        }
+        SectionHeader(stringResource(R.string.settings_section_other))
+        SettingsGroup {
+            item {
+                SettingsItem(
+                    title = stringResource(R.string.settings_client_version),
+                    description = BuildConfig.VERSION_NAME,
+                    leading = { IconTile(Icons.Filled.Info) },
+                )
+            }
+            item {
+                SettingsItem(
+                    title = stringResource(R.string.settings_release_channel),
+                    description = stringResource(
+                        when (BuildConfig.RELEASE_CHANNEL) {
+                            "open-beta" -> R.string.settings_release_channel_open_beta
+                            "closed-beta" -> R.string.settings_release_channel_closed_beta
+                            "internal-test" -> R.string.settings_release_channel_internal_test
+                            else -> R.string.settings_release_channel_production
+                        }
+                    ),
+                    leading = { IconTile(Icons.Filled.Update) },
+                )
+            }
+        }
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
         DebugSettingsEntry(navigator)
         SettingsItem(
