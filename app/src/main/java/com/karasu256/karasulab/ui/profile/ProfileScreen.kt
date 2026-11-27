@@ -5,11 +5,9 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -30,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karasu256.karasulab.R
+import com.karasu256.karasulab.ui.component.MinecraftAvatar
 import com.karasu256.karasulab.ui.component.SettingsGroup
 import com.karasu256.karasulab.ui.component.SettingsItem
 import com.karasu256.karasulab.ui.component.TextInputDialog
@@ -113,10 +112,16 @@ fun ProfileScreen(
                         )
                         state.providerIcons.forEach { option ->
                             ListItem(
-                                headlineContent = { Text(option.label) },
+                                headlineContent = { Text(option.accountName ?: option.provider.label) },
                                 supportingContent = { Text(stringResource(R.string.profile_use_provider_icon)) },
                                 modifier = Modifier.clickable { viewModel.useProviderIcon(option) },
-                                leadingContent = { Icon(Icons.Filled.Public, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                                leadingContent = {
+                                    if (option.provider.id == "minecraft") {
+                                        MinecraftAvatar(textureUrl = option.iconUrl)
+                                    } else {
+                                        UserAvatar(id = option.provider.id, label = option.provider.label, imageUrl = option.iconUrl)
+                                    }
+                                },
                                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                             )
                         }
