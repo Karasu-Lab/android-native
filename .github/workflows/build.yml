@@ -271,6 +271,9 @@ jobs:
       github.event_name == 'push' &&
       (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
       github.ref == 'refs/heads/preview')
+    concurrency:
+      group: google-play-release
+      cancel-in-progress: false
     environment:
       name: ${{ github.ref == 'refs/heads/preview' && 'preview' || 'production' }}
     steps:
@@ -291,6 +294,18 @@ jobs:
           BASE_VERSION: ${{ needs.release_please.outputs.base_version }}
         run: node .github/workflows/scripts/extract-release-notes.mjs CHANGELOG.md
       - name: Publish to Google Play
+        id: publish
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: ./service-account.json
+          packageName: ${{ vars.PACKAGE_NAME }}
+          releaseFiles: app/build/outputs/bundle/release/*.aab
+          tracks: internal
+          releaseName: ${{ needs.release_please.outputs.version_name }}
+          whatsNewDirectory: distribution/whatsnew
+
+      - name: Publish to Google Play (retry with a new edit)
+        if: ${{ failure() && steps.publish.outcome == 'failure' }}
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJson: ./service-account.json
