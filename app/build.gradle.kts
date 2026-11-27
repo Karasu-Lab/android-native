@@ -68,6 +68,7 @@ android {
 
     buildTypes {
         debug {
+            buildConfigField("String", "API_HOST", "\"dev-api.karasu256.com\"")
             buildConfigField("String", "AUTH_HOST", "\"dev-api-auth.karasu256.com\"")
             buildConfigField("String", "ACCOUNTS_HOST", "\"dev-accounts.karasu256.com\"")
             buildConfigField("String", "COOKIE_PREFIX", "\"preview\"")
@@ -82,6 +83,7 @@ android {
         }
         release {
             manifestPlaceholders += mapOf()
+            buildConfigField("String", "API_HOST", "\"api.karasu256.com\"")
             buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
             buildConfigField("String", "ACCOUNTS_HOST", "\"accounts.karasu256.com\"")
             buildConfigField("String", "COOKIE_PREFIX", "\"production\"")
