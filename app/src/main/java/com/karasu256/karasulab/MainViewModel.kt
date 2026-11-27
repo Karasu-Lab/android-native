@@ -2,6 +2,7 @@ package com.karasu256.karasulab
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import androidx.lifecycle.viewModelScope
 import com.karasu256.karasulab.data.AccountRepository
 import com.karasu256.karasulab.data.AuthRepository
@@ -32,10 +33,15 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             attempt { authRepository.completeOAuthCallback(uri) }
                 .onSuccess { result ->
-                    if (result != SignInResult.Success) Log.e("MainViewModel", "Native OAuth callback did not complete successfully: $result")
+                    if (result != SignInResult.Success) {
+                        Log.e("MainViewModel", "Native OAuth callback did not complete successfully: $result")
+                        FirebaseCrashlytics.getInstance().log("Native OAuth callback did not complete successfully: $result")
+                    }
                 }
                 .onFailure { error ->
                     Log.e("MainViewModel", "Could not complete native OAuth callback", error)
+                    FirebaseCrashlytics.getInstance().log("Could not complete native OAuth callback")
+                    FirebaseCrashlytics.getInstance().recordException(error)
                 }
         }
     }

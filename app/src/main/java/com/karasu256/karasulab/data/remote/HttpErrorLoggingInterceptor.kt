@@ -1,7 +1,7 @@
 package com.karasu256.karasulab.data.remote
 
 import android.util.Log
-import com.karasu256.karasulab.logging.CrashlyticsLogger
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.io.IOException
@@ -13,7 +13,8 @@ class HttpErrorLoggingInterceptor : Interceptor {
             chain.proceed(request)
         } catch (e: IOException) {
             Log.e("HttpError", "${request.method} ${request.url} failed before a response: $e", e)
-            CrashlyticsLogger.recordError(e, "${request.method} ${request.url} failed before a response")
+            FirebaseCrashlytics.getInstance().log("${request.method} ${request.url} failed before a response")
+            FirebaseCrashlytics.getInstance().recordException(e)
             throw e
         }
         if (!response.isSuccessful) {
@@ -23,10 +24,8 @@ class HttpErrorLoggingInterceptor : Interceptor {
                     request.header("Origin")
                 }"
             Log.e("HttpError", "${request.method} ${request.url} -> ${response.code} [$sent] $body")
-            CrashlyticsLogger.recordError(
-                ApiException(response.code, null, body),
-                "${request.method} ${request.url} -> ${response.code} [$sent]",
-            )
+            FirebaseCrashlytics.getInstance().log("${request.method} ${request.url} -> ${response.code} [$sent]")
+            FirebaseCrashlytics.getInstance().recordException(ApiException(response.code, null, body))
         }
         return response
     }

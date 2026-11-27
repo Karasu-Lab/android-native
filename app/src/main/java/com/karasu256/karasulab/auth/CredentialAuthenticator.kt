@@ -16,6 +16,7 @@ import androidx.credentials.exceptions.CreateCredentialException
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.karasu256.karasulab.R
 
@@ -43,9 +44,13 @@ class CredentialAuthenticator(private val activity: Activity) : CredentialProvid
         response.registrationResponseJson
     } catch (e: CreateCredentialCancellationException) {
         Log.e("CredentialAuthenticator", "Credential request cancelled: ${e.type}: ${e.errorMessage}", e)
+        FirebaseCrashlytics.getInstance().log("Credential request cancelled: ${e.type}: ${e.errorMessage}")
+        FirebaseCrashlytics.getInstance().recordException(e)
         null
     } catch (e: CreateCredentialException) {
         Log.e("CredentialAuthenticator", "Credential request failed: ${e.type}: ${e.errorMessage}", e)
+        FirebaseCrashlytics.getInstance().log("Credential request failed: ${e.type}: ${e.errorMessage}")
+        FirebaseCrashlytics.getInstance().recordException(e)
         throw e
     }
 
@@ -53,9 +58,13 @@ class CredentialAuthenticator(private val activity: Activity) : CredentialProvid
         credentialManager.getCredential(activity, GetCredentialRequest(listOf(option))).credential
     } catch (e: GetCredentialCancellationException) {
         Log.e("CredentialAuthenticator", "Credential request cancelled: ${e.type}: ${e.errorMessage}", e)
+        FirebaseCrashlytics.getInstance().log("Credential request cancelled: ${e.type}: ${e.errorMessage}")
+        FirebaseCrashlytics.getInstance().recordException(e)
         null
     } catch (e: GetCredentialException) {
         Log.e("CredentialAuthenticator", "Credential request failed: ${e.type}: ${e.errorMessage}", e)
+        FirebaseCrashlytics.getInstance().log("Credential request failed: ${e.type}: ${e.errorMessage}")
+        FirebaseCrashlytics.getInstance().recordException(e)
         throw e
     }
 }

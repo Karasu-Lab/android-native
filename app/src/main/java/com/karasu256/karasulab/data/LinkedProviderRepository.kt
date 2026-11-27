@@ -1,6 +1,7 @@
 package com.karasu256.karasulab.data
 
 import android.util.Log
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.data.auth.ActiveSessionCookie
 import com.karasu256.karasulab.data.auth.SessionTokenExchanger
@@ -54,6 +55,10 @@ class LinkedProviderRepository @Inject constructor(
     suspend fun unlink(providerId: String) {
         runCatching {
             authApi.unlinkAccount(sessionCookie.header(), UnlinkAccountRequest(providerId)).ensureSuccess()
-        }.onFailure { Log.e("LinkedProviderRepository", "Unlinking $providerId failed", it) }.getOrThrow()
+        }.onFailure {
+            Log.e("LinkedProviderRepository", "Unlinking $providerId failed", it)
+            FirebaseCrashlytics.getInstance().log("Unlinking $providerId failed")
+            FirebaseCrashlytics.getInstance().recordException(it)
+        }.getOrThrow()
     }
 }
