@@ -1,6 +1,7 @@
 package com.karasu256.karasulab.data.remote
 
 import android.util.Log
+import com.karasu256.karasulab.logging.CrashlyticsLogger
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.io.IOException
@@ -12,6 +13,7 @@ class HttpErrorLoggingInterceptor : Interceptor {
             chain.proceed(request)
         } catch (e: IOException) {
             Log.e("HttpError", "${request.method} ${request.url} failed before a response: $e", e)
+            CrashlyticsLogger.recordError(e, "${request.method} ${request.url} failed before a response")
             throw e
         }
         if (!response.isSuccessful) {
@@ -21,6 +23,10 @@ class HttpErrorLoggingInterceptor : Interceptor {
                     request.header("Origin")
                 }"
             Log.e("HttpError", "${request.method} ${request.url} -> ${response.code} [$sent] $body")
+            CrashlyticsLogger.recordError(
+                ApiException(response.code, null, body),
+                "${request.method} ${request.url} -> ${response.code} [$sent]",
+            )
         }
         return response
     }
