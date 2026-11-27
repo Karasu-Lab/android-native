@@ -1,6 +1,6 @@
 package com.karasu256.karasulab.ui.linking
 
-import android.util.Log
+import com.karasu256.karasulab.logging.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.karasu256.karasulab.R

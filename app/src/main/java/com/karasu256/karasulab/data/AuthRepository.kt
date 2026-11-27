@@ -1,6 +1,6 @@
 package com.karasu256.karasulab.data
 
-import android.util.Log
+import com.karasu256.karasulab.logging.Log
 import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.data.auth.AccountAlreadySignedInException
 import com.karasu256.karasulab.data.auth.OAuthRedirect
@@ -133,8 +133,11 @@ class AuthRepository @Inject constructor(
             OAuthLinkRequest(provider = providerId, callbackURL = callbackURL),
         )
         val body = response.body()?.string()
-        response.errorBody()?.close()
-        if (!response.isSuccessful) throw HttpException(response)
+        val errorBody = response.errorBody()?.string()
+        if (!response.isSuccessful) {
+            Log.e("AuthRepository", "OAuth link initiation failed for $providerId: ${errorBody ?: "HTTP ${response.code()}"}")
+            throw HttpException(response)
+        }
 
         val url = body?.let { json.decodeFromString<OAuthLinkResponse>(it).url }
             ?: throw IOException("OAuth link initiation returned no authorization URL")

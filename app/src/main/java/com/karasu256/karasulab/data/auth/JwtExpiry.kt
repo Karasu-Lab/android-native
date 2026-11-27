@@ -1,7 +1,7 @@
 package com.karasu256.karasulab.data.auth
 
 import android.util.Base64
-import android.util.Log
+import com.karasu256.karasulab.logging.Log
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import javax.inject.Inject

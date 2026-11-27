@@ -1,6 +1,6 @@
 package com.karasu256.karasulab
 
-import android.util.Log
+import com.karasu256.karasulab.logging.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.karasu256.karasulab.data.AccountRepository

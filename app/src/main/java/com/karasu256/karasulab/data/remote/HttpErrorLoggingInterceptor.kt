@@ -1,6 +1,6 @@
 package com.karasu256.karasulab.data.remote
 
-import android.util.Log
+import com.karasu256.karasulab.logging.Log
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.io.IOException
