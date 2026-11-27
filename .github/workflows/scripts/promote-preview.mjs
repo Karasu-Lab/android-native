@@ -38,13 +38,13 @@ function summaryItems(body) {
   return sectionLines(body, "## Summary")
     .map((line) => line.trimEnd())
     .filter((line) => line.startsWith("- ") && !line.startsWith("- ["))
-    .filter((line) => line !== "-");
+    .filter((line) => line.slice(2).trim().length > 0);
 }
 
 function checkItems(body) {
   return sectionLines(body, "## Check List")
     .map((line) => line.trimEnd())
-    .filter((line) => /^- \[[ xX]\]/.test(line));
+    .filter((line) => /^- \[[ xX]\]\s+\S/.test(line));
 }
 
 function placeholder(body, heading, fallback) {
