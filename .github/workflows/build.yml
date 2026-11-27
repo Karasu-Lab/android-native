@@ -3,7 +3,8 @@ name: Android Build
 on:
   push:
     branches:
-      - '**'
+      - main
+      - preview
   pull_request:
   workflow_dispatch:
 
@@ -11,12 +12,27 @@ permissions:
   contents: read
 
 jobs:
+  main-pr-source:
+    name: Validate pull request source for main
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.base_ref == github.event.repository.default_branch
+    steps:
+      - name: Require the preview branch as the source
+        run: |
+          if [ "$GITHUB_HEAD_REF" != "preview" ]; then
+            echo "::error::Pull requests to the default branch must come from the preview branch."
+            exit 1
+          fi
+
   release_please:
     name: Release Please
     runs-on: ubuntu-latest
     if: >-
       (github.event_name == 'push' &&
-      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) ||
+      (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
+      github.ref == 'refs/heads/preview')) ||
       (github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       !startsWith(github.head_ref, 'release-please--') &&
@@ -45,9 +61,10 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Run Release Please
+        if: ${{ !(github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) }}
         uses: googleapis/release-please-action@v5
         with:
-          target-branch: ${{ github.event_name == 'pull_request' && github.head_ref || github.event.repository.default_branch }}
+          target-branch: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           skip-github-release: ${{ github.event_name == 'pull_request' }}
@@ -58,11 +75,12 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       (github.event_name == 'push' &&
-      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) ||
+      (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
+      github.ref == 'refs/heads/preview')) ||
       (github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository)
     environment:
-      name: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
+      name: ${{ (github.event_name == 'pull_request' || github.ref == 'refs/heads/preview') && 'preview' || 'production' }}
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -219,8 +237,12 @@ jobs:
       - android-signed
       - release_please
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
+      github.ref == 'refs/heads/preview')
     environment:
-      name: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
+      name: ${{ github.ref == 'refs/heads/preview' && 'preview' || 'production' }}
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -262,6 +284,6 @@ jobs:
           serviceAccountJson: ./service-account.json
           packageName: ${{ vars.PACKAGE_NAME }}
           releaseFiles: app/build/outputs/bundle/release/*.aab
-          tracks: ${{ github.event_name == 'pull_request' && 'internal' || 'production' }}
+          tracks: internal
           releaseName: ${{ needs.release_please.outputs.version_name }}
           whatsNewDirectory: distribution/whatsnew
