@@ -33,6 +33,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karasu256.karasulab.R
 import com.karasu256.karasulab.auth.CredentialAuthenticator
+import com.karasu256.karasulab.data.OAuthProvider
+import com.karasu256.karasulab.ui.UiText
 import com.karasu256.karasulab.ui.component.AuthFrame
 import com.karasu256.karasulab.ui.component.CodeField
 import com.karasu256.karasulab.ui.component.EmailField
@@ -40,6 +42,7 @@ import com.karasu256.karasulab.ui.component.FormError
 import com.karasu256.karasulab.ui.component.OrDivider
 import com.karasu256.karasulab.ui.component.ProviderButtons
 import com.karasu256.karasulab.ui.component.StepHost
+import com.karasu256.karasulab.ui.providers.OAuthProvidersViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.NavGraphs
@@ -53,10 +56,16 @@ fun SignInScreen(
     addAccount: Boolean = false,
     switchToNewAccount: Boolean = false,
     viewModel: SignInViewModel = hiltViewModel(),
+    providersViewModel: OAuthProvidersViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val providersState by providersViewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
     val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
+
+    LaunchedEffect(providersViewModel) {
+        providersViewModel.load("signIn")
+    }
 
     LaunchedEffect(addAccount, switchToNewAccount) {
         viewModel.configure(
@@ -99,6 +108,9 @@ fun SignInScreen(
             when (step) {
                 SignInStep.Email -> EmailStep(
                     state = state,
+                    providers = providersState.oauthProviders + listOfNotNull(providersState.passkeyProvider),
+                    providersLoading = providersState.loading,
+                    providersError = providersState.error,
                     onEmailChange = viewModel::onEmailChange,
                     onSubmit = viewModel::submitEmail,
                     onGoogle = { viewModel.signInWithGoogle(credentials) },
@@ -143,6 +155,9 @@ private fun StepHeader(title: String, supporting: String? = null) {
 @Composable
 private fun EmailStep(
     state: SignInUiState,
+    providers: List<OAuthProvider>,
+    providersLoading: Boolean,
+    providersError: UiText?,
     onEmailChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onGoogle: () -> Unit,
@@ -170,11 +185,11 @@ private fun EmailStep(
         Spacer(Modifier.height(32.dp))
         OrDivider()
         Spacer(Modifier.height(24.dp))
-        if (state.providersLoading) {
+        if (providersLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         } else {
             ProviderButtons(
-                providers = state.providers,
+                providers = providers,
                 onGoogle = onGoogle,
                 onPasskey = onPasskey,
                 onOAuth = onOAuth,
@@ -183,7 +198,7 @@ private fun EmailStep(
                 busyProviderId = state.busyProviderId,
             )
         }
-        state.providersError?.let { FormError(text = it.resolve(), modifier = Modifier.padding(top = 12.dp)) }
+        providersError?.let { FormError(text = it.resolve(), modifier = Modifier.padding(top = 12.dp)) }
     }
 }
 

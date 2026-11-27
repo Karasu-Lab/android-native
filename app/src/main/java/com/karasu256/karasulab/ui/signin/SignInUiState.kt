@@ -1,7 +1,6 @@
 package com.karasu256.karasulab.ui.signin
 
 import com.karasu256.karasulab.R
-import com.karasu256.karasulab.data.OAuthProvider
 import com.karasu256.karasulab.data.SignInResult
 import com.karasu256.karasulab.ui.UiText
 import com.karasu256.karasulab.ui.component.ProviderMethod
@@ -16,9 +15,6 @@ data class SignInUiState(
     val busy: Boolean = false,
     val busyMethod: ProviderMethod? = null,
     val busyProviderId: String? = null,
-    val providers: List<OAuthProvider> = emptyList(),
-    val providersLoading: Boolean = true,
-    val providersError: UiText? = null,
     val emailError: UiText? = null,
     val passkeyError: UiText? = null,
     val methodsError: UiText? = null,

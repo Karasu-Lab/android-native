@@ -11,8 +11,6 @@ import com.karasu256.karasulab.data.AuthRepository
 import com.karasu256.karasulab.data.ChallengeOutcome
 import com.karasu256.karasulab.data.EmailChallenge
 import com.karasu256.karasulab.data.LookupOutcome
-import com.karasu256.karasulab.data.OAuthProvider
-import com.karasu256.karasulab.data.OAuthProviderRepository
 import com.karasu256.karasulab.data.SignInResult
 import com.karasu256.karasulab.data.auth.OAuthCallback
 import com.karasu256.karasulab.data.auth.OAuthCallbackHub
@@ -37,7 +35,6 @@ class SignInViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val accountRepository: AccountRepository,
     callbackHub: OAuthCallbackHub,
-    private val oauthProviderRepository: OAuthProviderRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SignInUiState())
     val uiState: StateFlow<SignInUiState> = _uiState.asStateFlow()
@@ -67,16 +64,6 @@ class SignInViewModel @Inject constructor(
                     _uiState.update { it.copy(emailError = completion.result.toError(R.string.error_unknown)) }
                 }
             }
-        }
-        viewModelScope.launch {
-            attempt { oauthProviderRepository.list("signIn") }
-                .onSuccess { providers ->
-                    _uiState.update { it.copy(providers = providers.filter(OAuthProvider::signIn), providersLoading = false) }
-                }
-                .onFailure { error ->
-                    Log.e("SignInViewModel", "Could not load sign-in providers", error)
-                    _uiState.update { it.copy(providersLoading = false, providersError = UiText(R.string.error_unknown)) }
-                }
         }
     }
 
@@ -179,7 +166,6 @@ class SignInViewModel @Inject constructor(
         _uiState.update { it.copy(emailError = error) }
 
     fun signInWithOAuth(providerId: String) {
-        if (_uiState.value.providers.none { it.id == providerId && it.kind == "social" }) return
         launchBusy(providerId = providerId) {
             val url = attempt { authRepository.startOAuthSignIn(providerId, _uiState.value.addingAccount) }
                 .getOrElse { error ->
