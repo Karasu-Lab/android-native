@@ -22,7 +22,9 @@ val appVersionName = project.findProperty("versionName")?.toString() ?: "1.0"
 android {
     namespace = "com.karasu256.karasulab"
     compileSdk {
-        version = release(37)
+        version = release(37) {
+            minorApiLevel = 1
+        }
     }
 
     defaultConfig {
