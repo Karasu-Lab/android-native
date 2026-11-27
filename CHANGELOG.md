@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.8.0](https://github.com/Karasu-Lab/android-native/compare/v1.7.1...v1.8.0) (2026-11-27)
+
+
+### Features
+
+* run account linking through an overridable link flow class ([f652f00](https://github.com/Karasu-Lab/android-native/commit/f652f0050a07e72051bfc28ddfb3f23e8fdcb2ba))
+* run provider sign-in through an overridable login flow class ([25b4a0a](https://github.com/Karasu-Lab/android-native/commit/25b4a0a9e8a10ab962db29a53529c3f99a012bb5))
+
+
+### Bug Fixes
+
+* build the profile icon options from the live providers and profiles ([fa7ee70](https://github.com/Karasu-Lab/android-native/commit/fa7ee70a44a77ee71767787be8ca11ee9ab5571e))
+
 ## [1.7.1](https://github.com/Karasu-Lab/android-native/compare/v1.7.0...v1.7.1) (2026-11-27)
 
 
