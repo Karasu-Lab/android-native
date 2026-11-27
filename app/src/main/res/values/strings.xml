@@ -185,4 +185,5 @@
     <string name="scope_read_github_user">ユーザー情報を読み取る</string>
     <string name="scope_read_github_avatar">アイコンを読み取る</string>
     <string name="scope_read_github_repositories">リポジトリ一覧を読み取る</string>
+    <string name="scope_delete_avatar">アバターを削除する</string>
 </resources>
