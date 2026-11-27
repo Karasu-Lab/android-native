@@ -11,6 +11,7 @@ import com.karasu256.karasulab.data.local.SessionStore
 import com.karasu256.karasulab.data.remote.AuthApi
 import com.karasu256.karasulab.data.remote.EmailChallengeRequest
 import com.karasu256.karasulab.data.remote.ErrorBody
+import com.karasu256.karasulab.data.remote.IdTokenPayload
 import com.karasu256.karasulab.data.remote.OAuthLinkRequest
 import com.karasu256.karasulab.data.remote.OAuthLinkResponse
 import com.karasu256.karasulab.data.remote.OneTimeTokenRequest
@@ -18,6 +19,7 @@ import com.karasu256.karasulab.data.remote.PasskeyVerifyRequest
 import com.karasu256.karasulab.data.remote.RateLimitBody
 import com.karasu256.karasulab.data.remote.SessionCookie
 import com.karasu256.karasulab.data.remote.SignInLookupResponse
+import com.karasu256.karasulab.data.remote.SocialSignInRequest
 import com.karasu256.karasulab.data.remote.VerifyOtpRequest
 import com.karasu256.karasulab.data.remote.bodyString
 import com.karasu256.karasulab.data.remote.cookieHeader
@@ -88,6 +90,16 @@ class AuthRepository @Inject constructor(
             }
         }
     }
+
+    suspend fun signInWithGoogle(idToken: String, rejectKnown: Boolean = false): SignInResult =
+        signIn("Google", rejectKnown) {
+            authApi.signInSocial(
+                SocialSignInRequest(
+                    provider = "google",
+                    idToken = IdTokenPayload(idToken)
+                )
+            )
+        }
 
     suspend fun completeSocialSignIn(
         token: String,

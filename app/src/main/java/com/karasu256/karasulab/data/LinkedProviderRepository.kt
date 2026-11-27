@@ -3,7 +3,10 @@ package com.karasu256.karasulab.data
 import com.karasu256.karasulab.logging.Log
 import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.data.auth.ActiveSessionCookie
+import com.karasu256.karasulab.data.auth.SessionTokenExchanger
 import com.karasu256.karasulab.data.remote.AuthApi
+import com.karasu256.karasulab.data.remote.IdTokenPayload
+import com.karasu256.karasulab.data.remote.LinkSocialRequest
 import com.karasu256.karasulab.data.remote.ProviderProfileResponse
 import com.karasu256.karasulab.data.remote.ProviderStreamClient
 import com.karasu256.karasulab.data.remote.ProviderStreamEvent
@@ -28,6 +31,7 @@ class LinkedProviderRepository @Inject constructor(
     private val authApi: AuthApi,
     private val accountRepository: AccountRepository,
     private val sessionCookie: ActiveSessionCookie,
+    private val exchanger: SessionTokenExchanger,
     private val json: Json,
     private val streamClient: ProviderStreamClient,
     private val profileCache: ProviderProfileCacheRepository,
@@ -71,6 +75,14 @@ class LinkedProviderRepository @Inject constructor(
     private fun avatarUrl(userId: String?, providerId: String, served: String?): String? {
         if (served == null || providerId == "minecraft" || userId == null) return served
         return "${BuildConfig.CDN_URL}u/profiles/$userId/avatars/$providerId/avatar.png"
+    }
+
+    suspend fun linkGoogle(idToken: String) {
+        authApi.linkSocial(
+            sessionCookie.header(),
+            LinkSocialRequest("google", IdTokenPayload(idToken))
+        ).ensureSuccess()
+        exchanger.reexchange(staleToken = null)
     }
 
     suspend fun verifyMinecraft(code: String) {

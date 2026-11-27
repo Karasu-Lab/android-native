@@ -16,11 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.karasu256.karasulab.data.OAuthProvider
 
-enum class ProviderMethod { Passkey }
+enum class ProviderMethod { Google, Passkey }
 
 @Composable
 fun ProviderButtons(
     providers: List<OAuthProvider>,
+    onGoogle: () -> Unit,
     onPasskey: () -> Unit,
     onOAuth: (String) -> Unit,
     enabled: Boolean,
@@ -31,6 +32,7 @@ fun ProviderButtons(
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         providers.forEach { provider ->
             val method = when (provider.id) {
+                "google" -> ProviderMethod.Google
                 "passkey" -> ProviderMethod.Passkey
                 else -> null
             }
@@ -38,6 +40,7 @@ fun ProviderButtons(
                 provider = provider,
                 onClick = {
                     when (provider.id) {
+                        "google" -> onGoogle()
                         "passkey" -> onPasskey()
                         else -> onOAuth(provider.id)
                     }
