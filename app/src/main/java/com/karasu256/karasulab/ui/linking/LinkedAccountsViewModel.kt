@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.karasu256.karasulab.R
 import com.karasu256.karasulab.auth.CredentialProvider
+import com.karasu256.karasulab.auth.LinkStart
+import com.karasu256.karasulab.auth.ProviderLinkFlow
 import com.karasu256.karasulab.data.AuthRepository
 import com.karasu256.karasulab.data.LinkedProviderRepository
 import com.karasu256.karasulab.data.OAuthProvider
@@ -59,6 +61,7 @@ class LinkedAccountsViewModel @Inject constructor(
     val openBrowser: Flow<String> = _openBrowser.receiveAsFlow()
 
     private var providerLabels: Map<String, String> = emptyMap()
+    private var activeLinkFlow: ProviderLinkFlow? = null
     private var minecraftProvider: OAuthProvider? = null
 
     fun updateProviders(providers: List<OAuthProvider>) {
@@ -119,35 +122,42 @@ class LinkedAccountsViewModel @Inject constructor(
 
     fun link(provider: OAuthProvider, credentials: CredentialProvider) {
         if (_uiState.value.busyProviderId != null) return
-        if (provider.id == "minecraft") {
-            minecraftProvider = provider
-            _uiState.update { it.copy(minecraftDialog = true, minecraftError = null) }
-            return
+        val flow = ProviderLinkFlow.forProvider(provider.id, authRepository, linkedProviderRepository)
+        activeLinkFlow = flow
+        _uiState.update { it.copy(busyProviderId = provider.id) }
+        viewModelScope.launch {
+            val start = attempt { flow.start(provider.id, credentials) }.getOrElse { error ->
+                Log.e("LinkedAccountsViewModel", "Linking ${provider.id} failed", error)
+                linkFailed()
+                _uiState.update { it.copy(busyProviderId = null) }
+                return@launch
+            }
+            when (start) {
+                is LinkStart.Browser -> _openBrowser.send(start.url)
+                is LinkStart.Credential -> {
+                    attempt { flow.save(provider.id, start.value) }
+                        .onSuccess { linkSucceeded(provider) }
+                        .onFailure { error ->
+                            Log.e("LinkedAccountsViewModel", "Linking ${provider.id} failed", error)
+                            linkFailed()
+                        }
+                    refreshProvider(provider.id)
+                    _uiState.update { it.copy(busyProviderId = null) }
+                }
+                LinkStart.Dialog -> {
+                    minecraftProvider = provider
+                    _uiState.update { it.copy(busyProviderId = null, minecraftDialog = true, minecraftError = null) }
+                }
+                LinkStart.Cancelled -> {
+                    refreshProvider(provider.id)
+                    _uiState.update { it.copy(busyProviderId = null) }
+                }
+            }
         }
-        if (provider.id == "google") linkGoogle(provider, credentials) else linkOAuth(provider)
     }
 
     fun profileTitle(provider: OAuthProvider, profile: CachedProviderProfile?): String =
         profile?.name ?: profile?.description ?: provider.label
-
-    private fun linkGoogle(provider: OAuthProvider, credentials: CredentialProvider) {
-        _uiState.update { it.copy(busyProviderId = provider.id) }
-        viewModelScope.launch {
-            val result = attempt {
-                val idToken = credentials.requestGoogleIdToken() ?: return@attempt false
-                linkedProviderRepository.linkGoogle(idToken)
-                true
-            }
-            result.onSuccess { linked ->
-                if (linked) linkSucceeded(provider)
-            }.onFailure { error ->
-                Log.e("LinkedAccountsViewModel", "Linking ${provider.id} failed", error)
-                linkFailed()
-            }
-            refreshProvider(provider.id)
-            _uiState.update { it.copy(busyProviderId = null) }
-        }
-    }
 
     fun addressCopied() = _uiState.update { it.copy(message = UiText(R.string.minecraft_verify_address_copied)) }
 
@@ -155,9 +165,10 @@ class LinkedAccountsViewModel @Inject constructor(
 
     fun verifyMinecraft(code: String) {
         val provider = minecraftProvider ?: return
+        val flow = activeLinkFlow ?: return
         _uiState.update { it.copy(busyProviderId = provider.id, minecraftError = null) }
         viewModelScope.launch {
-            attempt { linkedProviderRepository.verifyMinecraft(code) }
+            attempt { flow.save(provider.id, code) }
                 .onSuccess {
                     _uiState.update { it.copy(minecraftDialog = false) }
                     linkSucceeded(provider)
@@ -178,19 +189,6 @@ class LinkedAccountsViewModel @Inject constructor(
         _uiState.update { it.copy(message = UiText(R.string.connections_linked, listOf(provider.label))) }
 
     fun askUnlink(provider: OAuthProvider) = _uiState.update { it.copy(unlinkTarget = provider) }
-
-    private fun linkOAuth(provider: OAuthProvider) {
-        _uiState.update { it.copy(busyProviderId = provider.id) }
-        viewModelScope.launch {
-            val result = attempt { authRepository.startOAuthLink(provider.id) }
-                .onSuccess { url -> _openBrowser.send(url) }
-                .onFailure { error ->
-                    Log.e("LinkedAccountsViewModel", "Starting OAuth link for ${provider.id} failed", error)
-                    _uiState.update { it.copy(message = UiText(R.string.connections_link_failed)) }
-                }
-            if (result.isFailure) _uiState.update { it.copy(busyProviderId = null) }
-        }
-    }
 
     fun cancelUnlink() = _uiState.update { it.copy(unlinkTarget = null) }
 
