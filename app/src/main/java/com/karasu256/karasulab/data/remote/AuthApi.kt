@@ -35,6 +35,11 @@ interface AuthApi {
         @Body body: OAuthLinkRequest,
     ): Response<ResponseBody>
 
+    @POST("api/oauth/sign-in")
+    suspend fun startOAuthSignIn(
+        @Body body: OAuthLinkRequest,
+    ): Response<ResponseBody>
+
     @GET("api/sign-in/lookup")
     suspend fun lookupSignIn(@Query("email") email: String): Response<ResponseBody>
 

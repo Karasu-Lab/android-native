@@ -2,7 +2,6 @@ package com.karasu256.karasulab.data.auth
 
 import java.net.URI
 import java.net.URLDecoder
-import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import java.util.Base64
@@ -30,13 +29,6 @@ object NativeOAuthCallbackUri {
         require(providerPattern.matches(providerId))
         require(statePattern.matches(state))
         return URI("karasulab", "api", "/auth/callback/$providerId", "state=$state", null).toASCIIString()
-    }
-
-    fun signInUrl(providerId: String, state: String, authUiHost: String): String {
-        val callback = callback(providerId, state)
-        require(authUiHost.matches(Regex("^[a-z0-9.-]+$", RegexOption.IGNORE_CASE)))
-        val next = URLEncoder.encode(callback, StandardCharsets.UTF_8)
-        return "https://$authUiHost/sign-in?provider=$providerId&prompt=login&next=$next"
     }
 
     fun parse(raw: String): NativeOAuthCallback? {

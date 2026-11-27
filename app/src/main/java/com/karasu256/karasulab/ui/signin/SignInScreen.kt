@@ -2,6 +2,7 @@ package com.karasu256.karasulab.ui.signin
 
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,10 +25,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karasu256.karasulab.R
@@ -55,7 +56,6 @@ fun SignInScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
-    val uriHandler = LocalUriHandler.current
     val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
 
     LaunchedEffect(addAccount, switchToNewAccount) {
@@ -78,7 +78,7 @@ fun SignInScreen(
         }
     }
     LaunchedEffect(viewModel) {
-        viewModel.openBrowser.collect(uriHandler::openUri)
+        viewModel.openBrowser.collect { CustomTabsIntent.Builder().build().launchUrl(checkNotNull(activity), it.toUri()) }
     }
     BackHandler(enabled = state.step != SignInStep.Email) { viewModel.goBack() }
     BackHandler(enabled = state.busy) {}
