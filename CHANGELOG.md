@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/Karasu-Lab/android-native/compare/v1.5.1...v1.6.0) (2026-11-27)
+
+
+### Features
+
+* add a manually dispatched debug build workflow signed with the preview key ([ac97170](https://github.com/Karasu-Lab/android-native/commit/ac9717046807f1db0b33dc2eda5b8b3bb65d2468))
+
 ## [1.5.1](https://github.com/Karasu-Lab/android-native/compare/v1.5.0...v1.5.1) (2026-11-27)
 
 
