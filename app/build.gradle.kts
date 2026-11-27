@@ -75,6 +75,9 @@ android {
             manifestPlaceholders["accountsHost"] = "dev-accounts.karasu256.com"
             manifestPlaceholders["accountsWildcardHost"] = "*.dev-accounts.karasu256.com"
             signingConfig = signingConfigs.findByName("debug")
+            firebaseCrashlytics {
+                nativeSymbolUploadEnabled = true
+            }
         }
         release {
             manifestPlaceholders += mapOf()
