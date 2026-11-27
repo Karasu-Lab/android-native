@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.0](https://github.com/Karasu-Lab/android-native/compare/v1.3.0...v1.4.0) (2026-11-27)
+
+
+### Features
+
+* show a signing-in overlay while an OAuth callback completes ([84b0db0](https://github.com/Karasu-Lab/android-native/commit/84b0db0cdb25cc38a4591c54fbd70e217f9b3aa4))
+
+
+### Bug Fixes
+
+* attach release files on the default branch ([975cc49](https://github.com/Karasu-Lab/android-native/commit/975cc494457ed9dc3e4c2191fe043c6e4a6b7a73))
+
 ## [1.3.0](https://github.com/Karasu-Lab/android-native/compare/v1.2.2...v1.3.0) (2026-11-27)
 
 
