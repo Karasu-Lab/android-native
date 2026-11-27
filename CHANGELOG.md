@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/Karasu-Lab/android-native/compare/v1.6.0...v1.6.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* shorten the debug build step names ([a81a1bc](https://github.com/Karasu-Lab/android-native/commit/a81a1bcce78734b43e7036efb115c2cfd00e6575))
+
 ## [1.6.0](https://github.com/Karasu-Lab/android-native/compare/v1.5.1...v1.6.0) (2026-11-27)
 
 

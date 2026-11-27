@@ -8,15 +8,15 @@ permissions:
 
 jobs:
   android-debug:
-    name: Build preview-signed debug APK
+    name: Build debug APK
     runs-on: ubuntu-latest
     environment:
       name: preview
     steps:
-      - name: Check out source
+      - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Write google-services.json for this variant
+      - name: Write google-services.json
         env:
           GOOGLE_SERVICE_JSON: ${{ vars.GOOGLE_SERVICE_JSON }}
         run: |
@@ -25,7 +25,7 @@ jobs:
             jq -e . app/google-services.json > /dev/null
           fi
 
-      - name: Prepare Android signing key
+      - name: Prepare signing key
         env:
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
@@ -45,7 +45,7 @@ jobs:
           } > ./local.properties
           keytool -list -v -keystore ./.keystore -storepass "${STORE_PASS}"
 
-      - name: Compute build version
+      - name: Compute version
         id: version
         run: |
           BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
@@ -66,13 +66,13 @@ jobs:
         with:
           packages: platform-tools
 
-      - name: Install Android 17 preview SDK
+      - name: Install SDK packages
         run: sdkmanager --channel=3 --install "platforms;android-37.1" "build-tools;37.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build preview-signed debug APK
+      - name: Build debug APK
         env:
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
@@ -80,7 +80,7 @@ jobs:
           ./gradlew --no-daemon :app:assembleDebug \
             -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
 
-      - name: Verify signed APK and report
+      - name: Verify APK signature
         run: |
           APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
           APK=$(ls app/build/outputs/apk/debug/*.apk | head -n1)
@@ -97,7 +97,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           exit "$STATUS"
 
-      - name: Upload preview-signed debug APK
+      - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
           name: android-debug-signed-${{ github.sha }}
