@@ -1,9 +1,7 @@
 package com.karasu256.karasulab.data.auth
 
 import android.util.Base64
-import android.util.Log
-import com.google.firebase.Firebase
-import com.google.firebase.crashlytics.crashlytics
+import com.karasu256.karasulab.logging.Log
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -24,10 +22,6 @@ class Base64JwtExpiry @Inject constructor(
             val decoded =
                 Base64.decode(payload, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
             json.decodeFromString<JwtPayload>(decoded.toString(Charsets.UTF_8)).exp?.times(1000)
-        }.onFailure {
-            Log.e("JwtExpiry", "Could not read the token expiry", it)
-            Firebase.crashlytics.log("Could not read the token expiry")
-            Firebase.crashlytics.recordException(it)
-        }.getOrNull()
+        }.onFailure { Log.e("JwtExpiry", "Could not read the token expiry", it) }.getOrNull()
     }
 }

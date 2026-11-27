@@ -1,8 +1,6 @@
 package com.karasu256.karasulab.data
 
-import android.util.Log
-import com.google.firebase.Firebase
-import com.google.firebase.crashlytics.crashlytics
+import com.karasu256.karasulab.logging.Log
 import com.karasu256.karasulab.data.auth.SessionTokenExchanger
 import com.karasu256.karasulab.data.local.AccountEntity
 import com.karasu256.karasulab.data.local.SessionStore
@@ -82,8 +80,6 @@ class AccountRepository @Inject constructor(
             throw e
         } catch (e: Exception) {
             Log.e("AccountRepository", "Could not revoke the session of ${account.id}", e)
-            Firebase.crashlytics.log("Could not revoke the session of ${account.id}")
-            Firebase.crashlytics.recordException(e)
         }
     }
 

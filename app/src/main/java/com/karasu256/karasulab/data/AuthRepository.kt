@@ -1,8 +1,6 @@
 package com.karasu256.karasulab.data
 
-import android.util.Log
-import com.google.firebase.Firebase
-import com.google.firebase.crashlytics.crashlytics
+import com.karasu256.karasulab.logging.Log
 import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.data.auth.AccountAlreadySignedInException
 import com.karasu256.karasulab.data.auth.OAuthRedirect
@@ -67,11 +65,7 @@ class AuthRepository @Inject constructor(
             response.code() == 429 -> {
                 val seconds = response.errorBody()?.use { body ->
                     runCatching { json.decodeFromString<RateLimitBody>(body.string()).retryAfterSeconds }
-                        .onFailure {
-                            Log.e("AuthRepository", "Unreadable rate limit body", it)
-                            Firebase.crashlytics.log("Unreadable rate limit body")
-                            Firebase.crashlytics.recordException(it)
-                        }
+                        .onFailure { Log.e("AuthRepository", "Unreadable rate limit body", it) }
                         .getOrNull()
                 } ?: response.headers()["Retry-After"]?.toIntOrNull()?.takeIf { it > 0 } ?: 60
                 LookupOutcome.RateLimited(
@@ -110,7 +104,6 @@ class AuthRepository @Inject constructor(
         val cookie = oauthRedirect.exchangeToken(token, state)
         if (cookie == null) {
             Log.e("AuthRepository", "The one-time token response set no session cookie")
-            Firebase.crashlytics.log("The one-time token response set no session cookie")
             SignInResult.Failed
         } else {
             exchangeSession(cookie, rejectKnown)
@@ -119,13 +112,9 @@ class AuthRepository @Inject constructor(
         throw e
     } catch (e: IOException) {
         Log.e("AuthRepository", "Social sign-in failed on the network: $e", e)
-        Firebase.crashlytics.log("Social sign-in failed on the network: $e")
-        Firebase.crashlytics.recordException(e)
         SignInResult.NetworkError
     } catch (e: Exception) {
         Log.e("AuthRepository", "Social sign-in failed: $e", e)
-        Firebase.crashlytics.log("Social sign-in failed: $e")
-        Firebase.crashlytics.recordException(e)
         SignInResult.Failed
     }
 
@@ -161,7 +150,6 @@ class AuthRepository @Inject constructor(
         val result = when {
             callback.error != null -> {
                 Log.e("AuthRepository", "Native OAuth failed for ${callback.providerId}: ${callback.error}")
-                Firebase.crashlytics.log("Native OAuth failed for ${callback.providerId}: ${callback.error}")
                 SignInResult.Failed
             }
             pending.isLinking -> {
@@ -181,12 +169,10 @@ class AuthRepository @Inject constructor(
             response.errorBody()?.close()
             if (!response.isSuccessful) {
                 Log.e("AuthRepository", "Native OAuth token verification failed with ${response.code()}")
-                Firebase.crashlytics.log("Native OAuth token verification failed with ${response.code()}")
                 return SignInResult.Failed
             }
             val cookie = SessionCookie.from(response) ?: run {
                 Log.e("AuthRepository", "Native OAuth token verification returned no session cookie")
-                Firebase.crashlytics.log("Native OAuth token verification returned no session cookie")
                 return SignInResult.Failed
             }
             exchanger.exchange(cookie, rejectKnown)?.let { SignInResult.Success } ?: SignInResult.Failed
@@ -197,13 +183,9 @@ class AuthRepository @Inject constructor(
             throw e
         } catch (e: IOException) {
             Log.e("AuthRepository", "Native OAuth session exchange failed on the network: $e", e)
-            Firebase.crashlytics.log("Native OAuth session exchange failed on the network: $e")
-            Firebase.crashlytics.recordException(e)
             SignInResult.NetworkError
         } catch (e: HttpException) {
             Log.e("AuthRepository", "Native OAuth session exchange failed with ${e.code()}", e)
-            Firebase.crashlytics.log("Native OAuth session exchange failed with ${e.code()}")
-            Firebase.crashlytics.recordException(e)
             SignInResult.Failed
         }
     }
@@ -230,7 +212,6 @@ class AuthRepository @Inject constructor(
         if (result != SignInResult.Success || expectedEmail == null) return result
         val account = store.currentAccount() ?: run {
             Log.e("AuthRepository", "No active account after the passkey sign-in")
-            Firebase.crashlytics.log("No active account after the passkey sign-in")
             return SignInResult.Failed
         }
         if (account.email.equals(expectedEmail.trim(), ignoreCase = true)) return result
@@ -267,8 +248,6 @@ class AuthRepository @Inject constructor(
         throw e
     } catch (e: Exception) {
         Log.e("AuthRepository", "Could not start the email challenge: $e", e)
-        Firebase.crashlytics.log("Could not start the email challenge: $e")
-        Firebase.crashlytics.recordException(e)
         ChallengeOutcome.Failed
     }
 
@@ -283,18 +262,12 @@ class AuthRepository @Inject constructor(
             throw e
         } catch (e: IOException) {
             Log.e("AuthRepository", "Could not verify the email code: $e", e)
-            Firebase.crashlytics.log("Could not verify the email code: $e")
-            Firebase.crashlytics.recordException(e)
             return SignInResult.NetworkError
         }
         if (!response.isSuccessful) {
             val code = response.errorBody()?.use { body ->
                 runCatching { json.decodeFromString<ErrorBody>(body.string()).code }
-                    .onFailure {
-                        Log.e("AuthRepository", "Unreadable email code error body", it)
-                        Firebase.crashlytics.log("Unreadable email code error body")
-                        Firebase.crashlytics.recordException(it)
-                    }
+                    .onFailure { Log.e("AuthRepository", "Unreadable email code error body", it) }
                     .getOrNull()
             }
             return when (response.code()) {
@@ -317,13 +290,11 @@ class AuthRepository @Inject constructor(
         when {
             response.code() in 400..403 -> {
                 Log.e("AuthRepository", "$method sign-in was rejected with ${response.code()}")
-                Firebase.crashlytics.log("$method sign-in was rejected with ${response.code()}")
                 SignInResult.InvalidCredentials
             }
 
             !response.isSuccessful -> {
                 Log.e("AuthRepository", "$method sign-in failed with ${response.code()}")
-                Firebase.crashlytics.log("$method sign-in failed with ${response.code()}")
                 SignInResult.Failed
             }
 
@@ -333,13 +304,9 @@ class AuthRepository @Inject constructor(
         throw e
     } catch (e: IOException) {
         Log.e("AuthRepository", "$method sign-in failed on the network: $e", e)
-        Firebase.crashlytics.log("$method sign-in failed on the network: $e")
-        Firebase.crashlytics.recordException(e)
         SignInResult.NetworkError
     } catch (e: Exception) {
         Log.e("AuthRepository", "$method sign-in failed: $e", e)
-        Firebase.crashlytics.log("$method sign-in failed: $e")
-        Firebase.crashlytics.recordException(e)
         SignInResult.Failed
     }
 
@@ -354,7 +321,6 @@ class AuthRepository @Inject constructor(
                     "set-cookie names=${response.headers().values("Set-Cookie").map { it.substringBefore('=') }} " +
                     "parsed names=${response.setCookies().map { it.name }}"
             )
-            Firebase.crashlytics.log("The sign-in response set no session cookie: ${response.code()}")
             return SignInResult.Failed
         }
         return exchangeSession(cookie, rejectKnown)
@@ -364,7 +330,6 @@ class AuthRepository @Inject constructor(
         try {
             exchanger.exchange(cookie, rejectKnown)?.let { SignInResult.Success } ?: run {
                 Log.e("AuthRepository", "The session could not be exchanged for a custom token")
-                Firebase.crashlytics.log("The session could not be exchanged for a custom token")
                 SignInResult.Failed
             }
         } catch (e: AccountAlreadySignedInException) {
@@ -382,8 +347,6 @@ class AuthRepository @Inject constructor(
             throw e
         } catch (e: Exception) {
             Log.e("AuthRepository", "Could not revoke the session: $e", e)
-            Firebase.crashlytics.log("Could not revoke the session: $e")
-            Firebase.crashlytics.recordException(e)
         }
     }
 }

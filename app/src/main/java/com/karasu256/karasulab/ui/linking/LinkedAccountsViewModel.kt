@@ -1,10 +1,8 @@
 package com.karasu256.karasulab.ui.linking
 
-import android.util.Log
+import com.karasu256.karasulab.logging.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.Firebase
-import com.google.firebase.crashlytics.crashlytics
 import com.karasu256.karasulab.R
 import com.karasu256.karasulab.auth.CredentialProvider
 import com.karasu256.karasulab.data.AuthRepository
@@ -72,7 +70,6 @@ class LinkedAccountsViewModel @Inject constructor(
                     _uiState.update { it.copy(message = UiText(R.string.connections_linked, listOf(label))) }
                 } else {
                     Log.e("LinkedAccountsViewModel", "OAuth link failed for ${completion.providerId}: ${completion.result}")
-                    Firebase.crashlytics.log("OAuth link failed for ${completion.providerId}: ${completion.result}")
                     _uiState.update { it.copy(message = UiText(R.string.connections_link_failed)) }
                 }
             }
@@ -103,8 +100,6 @@ class LinkedAccountsViewModel @Inject constructor(
             _uiState.update { state -> state.copy(profiles = state.profiles + (providerId to fetched[providerId])) }
         }.onFailure { error ->
             Log.e("LinkedAccountsViewModel", "Refreshing provider $providerId failed", error)
-            Firebase.crashlytics.log("Refreshing provider $providerId failed")
-            Firebase.crashlytics.recordException(error)
         }
     }
 
@@ -136,8 +131,6 @@ class LinkedAccountsViewModel @Inject constructor(
                 if (linked) linkSucceeded(provider)
             }.onFailure { error ->
                 Log.e("LinkedAccountsViewModel", "Linking ${provider.id} failed", error)
-                Firebase.crashlytics.log("Linking ${provider.id} failed")
-                Firebase.crashlytics.recordException(error)
                 linkFailed()
             }
             refreshProvider(provider.id)
@@ -161,8 +154,6 @@ class LinkedAccountsViewModel @Inject constructor(
                 }
                 .onFailure { error ->
                     Log.e("LinkedAccountsViewModel", "Verifying the Minecraft code failed", error)
-                    Firebase.crashlytics.log("Verifying the Minecraft code failed")
-                    Firebase.crashlytics.recordException(error)
                     val message = if ((error as? ApiException)?.status == 409) R.string.minecraft_verify_already_linked else R.string.minecraft_verify_failed
                     _uiState.update { it.copy(minecraftError = UiText(message)) }
                 }
@@ -184,8 +175,6 @@ class LinkedAccountsViewModel @Inject constructor(
                 .onSuccess { url -> _openBrowser.send(url) }
                 .onFailure { error ->
                     Log.e("LinkedAccountsViewModel", "Starting OAuth link for ${provider.id} failed", error)
-                    Firebase.crashlytics.log("Starting OAuth link for ${provider.id} failed")
-                    Firebase.crashlytics.recordException(error)
                     _uiState.update { it.copy(message = UiText(R.string.connections_link_failed)) }
                 }
             if (result.isFailure) _uiState.update { it.copy(busyProviderId = null) }
@@ -201,8 +190,6 @@ class LinkedAccountsViewModel @Inject constructor(
             attempt { linkedProviderRepository.unlink(provider.id) }
                 .onFailure { error ->
                     Log.e("LinkedAccountsViewModel", "Unlinking ${provider.id} failed", error)
-                    Firebase.crashlytics.log("Unlinking ${provider.id} failed")
-                    Firebase.crashlytics.recordException(error)
                     _uiState.update { it.copy(message = UiText(R.string.error_unknown)) }
                 }
             refreshProvider(provider.id)

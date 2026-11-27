@@ -1,7 +1,7 @@
 package com.karasu256.karasulab.ui.component
 
 import android.graphics.Bitmap
-import android.util.Log
+import com.karasu256.karasulab.logging.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
@@ -26,8 +26,6 @@ import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.toBitmap
-import com.google.firebase.Firebase
-import com.google.firebase.crashlytics.crashlytics
 
 @Composable
 fun MinecraftAvatar(
@@ -42,11 +40,7 @@ fun MinecraftAvatar(
         val request = ImageRequest.Builder(context).data(textureUrl).allowHardware(false).build()
         when (val result = SingletonImageLoader.get(context).execute(request)) {
             is SuccessResult -> skin = result.image.toBitmap()
-            is ErrorResult -> {
-                Log.e("MinecraftAvatar", "Could not load the skin texture $textureUrl", result.throwable)
-                Firebase.crashlytics.log("Could not load the skin texture $textureUrl")
-                Firebase.crashlytics.recordException(result.throwable)
-            }
+            is ErrorResult -> Log.e("MinecraftAvatar", "Could not load the skin texture $textureUrl", result.throwable)
         }
     }
 

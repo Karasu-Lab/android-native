@@ -1,8 +1,6 @@
 package com.karasu256.karasulab.ui.theme
 
-import android.util.Log
-import com.google.firebase.Firebase
-import com.google.firebase.crashlytics.crashlytics
+import com.karasu256.karasulab.logging.Log
 import com.karasu256.karasulab.R
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
@@ -62,8 +60,7 @@ suspend fun FontFamily.Resolver.preloadAppFonts() {
             throw e
         } catch (e: Exception) {
             Log.e("Type", "Could not preload a font family", e)
-            Firebase.crashlytics.log("Could not preload a font family")
-            Firebase.crashlytics.recordException(e)
         }
     }
 }
+
