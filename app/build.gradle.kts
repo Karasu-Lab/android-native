@@ -76,7 +76,10 @@ android {
             buildConfigField("String", "CDN_URL", "\"https://dev-cdn.karasu256.com/\"")
             manifestPlaceholders["accountsHost"] = "dev-accounts.karasu256.com"
             manifestPlaceholders["accountsWildcardHost"] = "*.dev-accounts.karasu256.com"
-            signingConfig = signingConfigs.findByName("debug")
+            val keystoreFile = rootProject.file(".keystore")
+            if (keystoreFile.exists()) {
+                signingConfig = signingConfigs.findByName("release")
+            }
             configure<CrashlyticsExtension> {
                 nativeSymbolUploadEnabled = true
             }
