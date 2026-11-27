@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.7.1](https://github.com/Karasu-Lab/android-native/compare/v1.7.0...v1.7.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* apply the profile cache and linkable state per provider on the linked accounts screen ([ffc33fe](https://github.com/Karasu-Lab/android-native/commit/ffc33fedc11b7b6fd2799ce8ababab9b060738a2))
+* keep the provider icon placeholder on the linked accounts screen ([4c94d89](https://github.com/Karasu-Lab/android-native/commit/4c94d89dff9fb35365da82a1a7aaca677cff6f06))
+* restore the native Google sign-in and linking through Credential Manager ([1a3e515](https://github.com/Karasu-Lab/android-native/commit/1a3e515c53e154e2143e061d432aaa0d116028af))
+
 ## [1.7.0](https://github.com/Karasu-Lab/android-native/compare/v1.6.1...v1.7.0) (2026-11-27)
 
 
