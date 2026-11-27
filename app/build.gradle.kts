@@ -90,7 +90,9 @@ val gpgDebugKeystore: File? = gpgDebugPassword?.let {
 android {
     namespace = "com.karasu256.karasulab"
     compileSdk {
-        version = release(37)
+        version = release(37) {
+            minorApiLevel = 1
+        }
     }
 
     defaultConfig {
