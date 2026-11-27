@@ -1,1 +1,6 @@
 /build
+
+.keystore
+
+release/
+debug/

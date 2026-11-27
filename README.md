@@ -10,8 +10,11 @@ Native Android app for Karasu Lab.
 | `ANDROID_HOME` or `ANDROID_SDK_ROOT` | Yes | Android SDK root. Install Android SDK Platform 37.0, Android SDK Build-Tools 37.0.0, and Platform-Tools. |
 | `GNUPGHOME` | No | GPG home directory containing local encrypted signing files. Defaults to the repository's `.gpg` directory. Signing is optional. |
 | `PINENTRY_PROGRAM` | No | Path to a pinentry executable for the GPG agent. The Nix development shell sets this automatically. |
-| `SIGNING_KEY` | No | Path to the release keystore. The GitHub Actions workflow sets it to the decrypted keystore path for signed builds. |
-| `SIGNING_PASS` | No | Release keystore and key password. Set with `SIGNING_KEY`; in GitHub Actions, configure it as a secret. |
+| `SIGNING_KEY_BASE64` | No | Base64-encoded release keystore for GitHub Actions. The workflow decodes it and writes it to `.keystore`. |
+| `SIGNING_STORE_PASSWORD` | No | Release keystore store password. |
+| `SIGNING_KEY_PASSWORD` | No | Release key password. |
+| `ALIAS` | No | Release key alias. |
+| `SIGNING_PASS` | No | Release keystore and key password. Set with `SIGNING_KEY`; in GitHub Actions, configure it as an environment secret. |
 
 Without signing material, debug builds use the standard Android debug key and
 release builds are unsigned.
@@ -54,8 +57,11 @@ Gradle property and the `signing.storePassword`, `signing.debugKeyPassword`,
 and `signing.releaseKeyPassword` properties in the untracked `local.properties`
 file.
 
-The GitHub Actions workflow also requires the `ANDROID_GPG_PRIVATE_KEY`,
-`ANDROID_GPG_PASSPHRASE`, and `ANDROID_SIGNING_KEYSTORE_GPG` secrets to decrypt
-the release keystore. When none of the signing secrets are configured, release
-artifacts are built unsigned. Partially configured signing secrets fail the
-signing job.
+For signed GitHub Actions builds, configure `SIGNING_KEY_BASE64` (the base64-encoded
+release keystore), `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_PASSWORD`, and `ALIAS`
+as environment secrets in both `preview` and `production`. Same-repository pull requests use `preview`; pushes to the
+default branch use `production`. The workflow decodes `SIGNING_KEY_BASE64` and places
+it at the project root as `.keystore`. When neither secret is configured, the
+signed job is skipped; a partially configured set
+fails and reports the missing secret name. Fork pull requests do not receive
+environment secrets.
