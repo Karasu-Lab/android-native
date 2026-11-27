@@ -24,6 +24,7 @@
     <string name="sign_in_title">Karasu Lab にサインイン</string>
     <string name="sign_in_add_account_title">別のアカウントを追加</string>
     <string name="sign_in">サインイン</string>
+    <string name="signing_in">サインイン中</string>
     <string name="email">メールアドレス</string>
     <string name="or_divider">または</string>
     <string name="sign_in_with_google">Google で続行</string>

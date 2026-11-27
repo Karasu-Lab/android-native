@@ -55,6 +55,11 @@ class SignInViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            authRepository.oauthSignInInProgress.collect { inProgress ->
+                _uiState.update { it.copy(completingOAuth = inProgress) }
+            }
+        }
+        viewModelScope.launch {
             authRepository.oauthCompletions.collect { completion ->
                 if (completion.isLinking) return@collect
                 if (completion.result == SignInResult.Success) {
@@ -149,6 +154,7 @@ class SignInViewModel @Inject constructor(
     }
 
     private fun onOAuthCallback(uri: Uri) {
+        _uiState.update { it.copy(completingOAuth = true) }
         val token = OAuthCallback.token(uri)
         val state = OAuthCallback.state(uri)
         if (OAuthCallback.error(uri) != null || token == null || state == null) {
@@ -163,7 +169,7 @@ class SignInViewModel @Inject constructor(
     }
 
     private fun failOAuth(error: UiText = UiText(R.string.error_oauth_failed)) =
-        _uiState.update { it.copy(emailError = error) }
+        _uiState.update { it.copy(emailError = error, completingOAuth = false) }
 
     fun signInWithOAuth(providerId: String) {
         launchBusy(providerId = providerId) {
