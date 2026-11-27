@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0](https://github.com/Karasu-Lab/android-native/compare/v1.6.1...v1.7.0) (2026-11-27)
+
+
+### Features
+
+* label the avatar delete scope in authorized apps ([c616dd2](https://github.com/Karasu-Lab/android-native/commit/c616dd2ea90bc577507e6d7a5020d887d542c0cb))
+* sign in with Google through the shared OAuth flow ([532d772](https://github.com/Karasu-Lab/android-native/commit/532d7726975e6ee5f07f09e3751e65188a9f68ef))
+
 ## [1.6.1](https://github.com/Karasu-Lab/android-native/compare/v1.6.0...v1.6.1) (2026-11-27)
 
 
