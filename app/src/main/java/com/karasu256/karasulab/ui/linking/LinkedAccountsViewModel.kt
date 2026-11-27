@@ -8,7 +8,8 @@ import com.karasu256.karasulab.auth.CredentialProvider
 import com.karasu256.karasulab.data.AuthRepository
 import com.karasu256.karasulab.data.LinkedProviderRepository
 import com.karasu256.karasulab.data.OAuthProvider
-import com.karasu256.karasulab.data.ProviderProfile
+import com.karasu256.karasulab.data.CachedProviderProfile
+import com.karasu256.karasulab.data.ProviderProfileCacheRepository
 import com.karasu256.karasulab.data.SignInResult
 import com.karasu256.karasulab.data.SecurityRepository
 import com.karasu256.karasulab.data.remote.ApiException
@@ -29,7 +30,8 @@ import javax.inject.Inject
 data class LinkedAccountsUiState(
     val loading: Boolean = true,
     val loadFailed: Boolean = false,
-    val profiles: Map<String, ProviderProfile?> = emptyMap(),
+    val profiles: Map<String, CachedProviderProfile?> = emptyMap(),
+    val linkable: Map<String, Boolean> = emptyMap(),
     val hasPasskeys: Boolean = false,
     val hasPassword: Boolean = false,
     val busyProviderId: String? = null,
@@ -48,6 +50,7 @@ class LinkedAccountsViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val linkedProviderRepository: LinkedProviderRepository,
     private val securityRepository: SecurityRepository,
+    profileCache: ProviderProfileCacheRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LinkedAccountsUiState())
     val uiState: StateFlow<LinkedAccountsUiState> = _uiState.asStateFlow()
@@ -63,6 +66,17 @@ class LinkedAccountsViewModel @Inject constructor(
     }
 
     init {
+        linkedProviderRepository.startStream(viewModelScope)
+        viewModelScope.launch {
+            profileCache.profiles.collect { profiles ->
+                _uiState.update { it.copy(profiles = profiles) }
+            }
+        }
+        viewModelScope.launch {
+            linkedProviderRepository.linkable.collect { linkable ->
+                _uiState.update { it.copy(linkable = linkable) }
+            }
+        }
         viewModelScope.launch {
             authRepository.oauthCompletions.collect { completion ->
                 if (!completion.isLinking) return@collect
@@ -88,7 +102,6 @@ class LinkedAccountsViewModel @Inject constructor(
                 state.copy(
                     loading = false,
                     loadFailed = profiles.isFailure,
-                    profiles = profiles.getOrDefault(state.profiles),
                     hasPasskeys = security.getOrNull()?.passkeys?.isNotEmpty() ?: state.hasPasskeys,
                     hasPassword = security.getOrNull()?.hasPassword ?: state.hasPassword,
                 )
@@ -97,9 +110,7 @@ class LinkedAccountsViewModel @Inject constructor(
     }
 
     private suspend fun refreshProvider(providerId: String) {
-        attempt { linkedProviderRepository.profiles() }.onSuccess { fetched ->
-            _uiState.update { state -> state.copy(profiles = state.profiles + (providerId to fetched[providerId])) }
-        }.onFailure { error ->
+        attempt { linkedProviderRepository.profiles() }.onFailure { error ->
             Log.e("LinkedAccountsViewModel", "Refreshing provider $providerId failed", error)
         }
     }
@@ -116,10 +127,8 @@ class LinkedAccountsViewModel @Inject constructor(
         if (provider.id == "google") linkGoogle(provider, credentials) else linkOAuth(provider)
     }
 
-    fun profileTitle(provider: OAuthProvider, profile: ProviderProfile?): String = when (provider.id) {
-        "xbox", "minecraft" -> profile?.name ?: profile?.accountId ?: provider.label
-        else -> profile?.name ?: profile?.email ?: provider.label
-    }
+    fun profileTitle(provider: OAuthProvider, profile: CachedProviderProfile?): String =
+        profile?.name ?: profile?.description ?: provider.label
 
     private fun linkGoogle(provider: OAuthProvider, credentials: CredentialProvider) {
         _uiState.update { it.copy(busyProviderId = provider.id) }

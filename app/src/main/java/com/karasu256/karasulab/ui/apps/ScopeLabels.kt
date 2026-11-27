@@ -12,5 +12,6 @@ fun scopeLabel(scope: String): Int? = when (scope) {
     "read:github:user" -> R.string.scope_read_github_user
     "read:github:avatar" -> R.string.scope_read_github_avatar
     "read:github:repositories" -> R.string.scope_read_github_repositories
+    "delete:users.avatar", "delete:users:avatar" -> R.string.scope_delete_avatar
     else -> null
 }
