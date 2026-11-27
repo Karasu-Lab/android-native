@@ -59,6 +59,14 @@
     <string name="strength_strong">強い</string>
 
     <string name="settings_title">アカウント設定</string>
+    <string name="settings_section_general">一般</string>
+    <string name="settings_section_other">その他</string>
+    <string name="settings_client_version">クライアントバージョン</string>
+    <string name="settings_release_channel">リリースチャンネル</string>
+    <string name="settings_release_channel_production">Production</string>
+    <string name="settings_release_channel_open_beta">Open Beta</string>
+    <string name="settings_release_channel_closed_beta">Closed Beta</string>
+    <string name="settings_release_channel_internal_test">Internal Test</string>
     <string name="settings_security">セキュリティ</string>
     <string name="settings_connections">アカウント連携</string>
     <string name="settings_authorized_apps">認可したアプリ</string>

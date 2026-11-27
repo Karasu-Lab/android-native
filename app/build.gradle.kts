@@ -73,6 +73,7 @@ android {
 
     buildTypes {
         debug {
+            buildConfigField("String", "RELEASE_CHANNEL", "\"internal-test\"")
             buildConfigField("String", "API_HOST", "\"dev-api.karasu256.com\"")
             buildConfigField("String", "AUTH_HOST", "\"dev-api-auth.karasu256.com\"")
             buildConfigField(
@@ -96,6 +97,7 @@ android {
         }
         release {
             manifestPlaceholders += mapOf()
+            buildConfigField("String", "RELEASE_CHANNEL", "\"production\"")
             buildConfigField("String", "API_HOST", "\"api.karasu256.com\"")
             buildConfigField("String", "AUTH_HOST", "\"api-auth.karasu256.com\"")
             buildConfigField(
