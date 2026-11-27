@@ -69,6 +69,14 @@
     <string name="debug_api_host">接続先ホスト</string>
     <string name="debug_branch">ブランチ</string>
     <string name="debug_unavailable">診断情報を取得できませんでした</string>
+    <string name="debug_fingerprint_section">フィンガープリント</string>
+    <string name="debug_sha1">SHA-1</string>
+    <string name="debug_sha256">SHA-256</string>
+    <string name="debug_fingerprint_copied">フィンガープリントをコピーしました</string>
+    <string name="debug_firebase_section">Firebase</string>
+    <string name="debug_firebase_project_id">プロジェクト ID</string>
+    <string name="debug_firebase_project_number">プロジェクト番号</string>
+    <string name="debug_firebase_app_id">アプリ ID</string>
     <string name="settings_account_menu">アカウントメニュー</string>
     <string name="settings_sign_out">サインアウト</string>
     <string name="settings_signing_out">サインアウト中</string>
