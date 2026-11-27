@@ -1,6 +1,6 @@
 package com.karasu256.karasulab.data
 
-import android.util.Log
+import com.karasu256.karasulab.logging.Log
 import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.data.auth.ActiveSessionCookie
 import com.karasu256.karasulab.data.auth.SessionTokenExchanger

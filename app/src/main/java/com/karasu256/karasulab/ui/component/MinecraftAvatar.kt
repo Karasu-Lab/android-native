@@ -1,7 +1,7 @@
 package com.karasu256.karasulab.ui.component
 
 import android.graphics.Bitmap
-import android.util.Log
+import com.karasu256.karasulab.logging.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme

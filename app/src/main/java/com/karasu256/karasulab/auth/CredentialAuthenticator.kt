@@ -1,7 +1,7 @@
 package com.karasu256.karasulab.auth
 
 import android.app.Activity
-import android.util.Log
+import com.karasu256.karasulab.logging.Log
 import androidx.credentials.Credential
 import androidx.credentials.CreatePublicKeyCredentialRequest
 import androidx.credentials.CreatePublicKeyCredentialResponse
