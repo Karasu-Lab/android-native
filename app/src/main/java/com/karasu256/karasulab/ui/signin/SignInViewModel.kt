@@ -139,20 +139,6 @@ class SignInViewModel @Inject constructor(
         }
     }
 
-    fun signInWithGoogle(credentials: CredentialProvider) {
-        launchBusy(ProviderMethod.Google) {
-            val result = attempt {
-                val idToken = credentials.requestGoogleIdToken() ?: return@attempt null
-                authRepository.signInWithGoogle(idToken, _uiState.value.addingAccount)
-            }.getOrElse { error ->
-                _uiState.update { it.copy(emailError = error.toUiText(R.string.error_google_failed)) }
-                return@launchBusy
-            } ?: return@launchBusy
-            result.toError(R.string.error_google_failed)?.let { error -> _uiState.update { it.copy(emailError = error) } }
-            if (result == SignInResult.Success) finish()
-        }
-    }
-
     private fun onOAuthCallback(uri: Uri) {
         _uiState.update { it.copy(completingOAuth = true) }
         val token = OAuthCallback.token(uri)

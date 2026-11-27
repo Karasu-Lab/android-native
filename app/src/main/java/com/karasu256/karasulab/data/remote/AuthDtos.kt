@@ -5,12 +5,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
 @Serializable
-data class SocialSignInRequest(
-    val provider: String,
-    val idToken: IdTokenPayload,
-)
-
-@Serializable
 data class OneTimeTokenRequest(
     val token: String,
 )
@@ -26,11 +20,6 @@ data class OAuthLinkRequest(
 data class OAuthLinkResponse(
     val url: String,
     val redirect: Boolean = false,
-)
-
-@Serializable
-data class IdTokenPayload(
-    val token: String,
 )
 
 @Serializable
@@ -192,12 +181,6 @@ data class ProviderProfileResponse(
 @Serializable
 data class UnlinkAccountRequest(
     val providerId: String,
-)
-
-@Serializable
-data class LinkSocialRequest(
-    val provider: String,
-    val idToken: IdTokenPayload,
 )
 
 @Serializable
