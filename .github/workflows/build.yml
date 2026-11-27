@@ -302,3 +302,43 @@ jobs:
           tracks: internal
           releaseName: ${{ needs.release_please.outputs.version_name }}
           whatsNewDirectory: distribution/whatsnew
+
+  github-release-assets:
+    name: Attach APK files to the GitHub Release
+    needs:
+      - release_please
+      - android-signed
+      - android-unsigned
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/preview'
+    permissions:
+      contents: write
+    steps:
+      - name: Download signed artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-signed-${{ github.sha }}
+          path: release-assets/signed
+
+      - name: Download unsigned artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-unsigned-${{ github.sha }}
+          path: release-assets/unsigned
+
+      - name: Attach APK files to the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: v${{ needs.release_please.outputs.base_version }}
+        run: |
+          if ! gh release view "$TAG_NAME" > /dev/null 2>&1; then
+            echo "No GitHub Release for $TAG_NAME. Skipping."
+            exit 0
+          fi
+          mapfile -t APK_FILES < <(find release-assets -name '*.apk' -type f)
+          if [ "${#APK_FILES[@]}" -eq 0 ]; then
+            echo "No APK files found in the build artifacts."
+            exit 1
+          fi
+          gh release upload "$TAG_NAME" "${APK_FILES[@]}" --clobber
