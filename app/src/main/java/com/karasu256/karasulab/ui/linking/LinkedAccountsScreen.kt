@@ -44,6 +44,7 @@ import coil3.compose.AsyncImage
 import com.karasu256.karasulab.ui.component.ConfirmDialog
 import com.karasu256.karasulab.ui.component.ErrorRetry
 import com.karasu256.karasulab.ui.component.MinecraftAvatar
+import com.karasu256.karasulab.ui.component.ProviderIcon
 import com.karasu256.karasulab.ui.component.SettingsGroup
 import com.karasu256.karasulab.ui.component.SettingsItem
 import com.karasu256.karasulab.ui.component.UserAvatar
@@ -61,7 +62,6 @@ fun LinkedAccountsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val providers = state.clients
     val activity = LocalActivity.current
-    val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
     val snackbarHostState = remember { SnackbarHostState() }
     val message = state.message?.resolve()
 
@@ -108,19 +108,24 @@ fun LinkedAccountsScreen(
                             } else if (profile?.iconUrl != null) {
                                 UserAvatar(id = provider.providerId, label = provider.label, imageUrl = profile.iconUrl)
                             } else {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    AsyncImage(
-                                        model = provider.iconUrl,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
-                                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
-                                    )
+                                val oauthProvider = state.providers.firstOrNull { it.id == provider.providerId }
+                                if (oauthProvider != null) {
+                                    ProviderIcon(provider = oauthProvider)
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        AsyncImage(
+                                            model = provider.iconUrl,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp),
+                                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
+                                        )
+                                    }
                                 }
                             }
                         },
@@ -130,7 +135,7 @@ fun LinkedAccountsScreen(
                                     if (profile != null) {
                                         viewModel.askUnlink(provider)
                                     } else {
-                                        viewModel.link(provider, credentials)
+                                        viewModel.link(provider, CredentialAuthenticator(checkNotNull(activity)))
                                     }
                                 },
                                 enabled = !busy && if (profile != null) state.canUnlink else state.linkable[provider.providerId] != false,
