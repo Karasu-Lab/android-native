@@ -1,7 +1,6 @@
 package com.karasu256.karasulab.data
 
 import com.karasu256.karasulab.logging.Log
-import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.data.auth.AccountAlreadySignedInException
 import com.karasu256.karasulab.data.auth.OAuthRedirect
 import com.karasu256.karasulab.data.auth.ActiveSessionCookie
@@ -118,10 +117,24 @@ class AuthRepository @Inject constructor(
         SignInResult.Failed
     }
 
-    fun startOAuthSignIn(providerId: String, rejectKnown: Boolean = false): String {
+    suspend fun startOAuthSignIn(providerId: String, rejectKnown: Boolean = false): String {
         val state = NativeOAuthCallbackUri.newState()
-        val url = NativeOAuthCallbackUri.signInUrl(providerId, state, BuildConfig.AUTH_UI_HOST)
-        oauthStateStore.save(state, providerId, rejectKnown)
+        val callbackURL = NativeOAuthCallbackUri.callback(providerId, state)
+        val response = authApi.startOAuthSignIn(
+            OAuthLinkRequest(provider = providerId, callbackURL = callbackURL),
+        )
+        val body = response.body()?.string()
+        val errorBody = response.errorBody()?.string()
+        if (!response.isSuccessful) {
+            Log.e("AuthRepository", "OAuth sign-in initiation failed for $providerId: ${errorBody ?: "HTTP ${response.code()}"}")
+            throw HttpException(response)
+        }
+
+        val url = body?.let { json.decodeFromString<OAuthLinkResponse>(it).url }
+            ?: throw IOException("OAuth sign-in initiation returned no authorization URL")
+        if (!url.startsWith("https://")) throw IOException("OAuth sign-in initiation returned an invalid authorization URL")
+
+        oauthStateStore.save(state, providerId, rejectKnown, isLinking = false)
         return url
     }
 

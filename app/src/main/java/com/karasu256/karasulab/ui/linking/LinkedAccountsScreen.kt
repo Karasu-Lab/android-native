@@ -11,9 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LinkOff
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material.icons.filled.ViewInAr
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,8 +22,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -39,39 +34,41 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.R
 import com.karasu256.karasulab.auth.CredentialAuthenticator
-import com.karasu256.karasulab.data.OAuthProvider
 import com.karasu256.karasulab.ui.component.ConfirmDialog
 import com.karasu256.karasulab.ui.component.ErrorRetry
-import com.karasu256.karasulab.ui.component.IconTile
 import com.karasu256.karasulab.ui.component.MinecraftAvatar
+import com.karasu256.karasulab.ui.component.ProviderIcon
 import com.karasu256.karasulab.ui.component.SettingsGroup
 import com.karasu256.karasulab.ui.component.SettingsItem
-import com.karasu256.karasulab.ui.component.Tone
 import com.karasu256.karasulab.ui.component.UserAvatar
+import com.karasu256.karasulab.ui.providers.OAuthProvidersViewModel
 import com.karasu256.karasulab.ui.settings.SettingsScaffold
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-
-private fun providerIcon(id: String): ImageVector = when (id) {
-    "xbox" -> Icons.Filled.SportsEsports
-    "minecraft" -> Icons.Filled.ViewInAr
-    else -> Icons.Filled.Public
-}
 
 @Destination<RootGraph>
 @Composable
 fun LinkedAccountsScreen(
     navigator: DestinationsNavigator,
     viewModel: LinkedAccountsViewModel = hiltViewModel(),
+    providersViewModel: OAuthProvidersViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val providersState by providersViewModel.uiState.collectAsStateWithLifecycle()
+    val providers = providersState.oauthProviders + listOfNotNull(providersState.minecraftProvider)
     val activity = LocalActivity.current
     val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
     val snackbarHostState = remember { SnackbarHostState() }
     val message = state.message?.resolve()
 
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.load() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.load()
+        providersViewModel.load("link")
+    }
+    LaunchedEffect(providers) {
+        viewModel.updateProviders(providers)
+    }
     LaunchedEffect(viewModel) {
         viewModel.openBrowser.collect { CustomTabsIntent.Builder().build().launchUrl(checkNotNull(activity), it.toUri()) }
     }
@@ -88,11 +85,17 @@ fun LinkedAccountsScreen(
         loading = state.loading,
         snackbarHostState = snackbarHostState,
     ) {
-        if (state.loadFailed) {
-            ErrorRetry(message = stringResource(R.string.load_error), onRetry = viewModel::load)
+        if (state.loadFailed || providersState.error != null) {
+            ErrorRetry(
+                message = stringResource(R.string.load_error),
+                onRetry = {
+                    viewModel.load()
+                    providersViewModel.load("link")
+                },
+            )
         }
         SettingsGroup {
-            state.providers.filter(OAuthProvider::link).forEach { provider ->
+            providers.forEach { provider ->
                 item {
                     val profile = state.profiles[provider.id]
                     val busy = state.busyProviderId == provider.id
@@ -108,10 +111,8 @@ fun LinkedAccountsScreen(
                                 MinecraftAvatar(textureUrl = profile.avatarUrl)
                             } else if (profile?.avatarUrl != null) {
                                 UserAvatar(id = provider.id, label = provider.label, imageUrl = profile.avatarUrl)
-                            } else if (provider.id == "google") {
-                                IconTile(Icons.Filled.Public, Tone.Neutral)
                             } else {
-                                IconTile(providerIcon(provider.id), Tone.Neutral)
+                                ProviderIcon(provider = provider)
                             }
                         },
                         trailing = {
