@@ -259,25 +259,7 @@ jobs:
       - name: Prepare Google Play release notes
         env:
           BASE_VERSION: ${{ needs.release_please.outputs.base_version }}
-        run: |
-          mkdir -p distribution/whatsnew
-          NOTES=""
-          if [ -f CHANGELOG.md ]; then
-            NOTES=$(awk -v ver="$BASE_VERSION" '
-              BEGIN { gsub(/\./, "\\.", ver) }
-              $0 ~ "^## \\[?" ver "\\]?" { capture = 1; next }
-              capture && /^## / { exit }
-              capture { print }
-            ' CHANGELOG.md)
-          fi
-          if [ -z "$NOTES" ]; then
-            NOTES=$(git log -1 --pretty=%s)
-          fi
-          printf '%s\n' "$NOTES" \
-            | sed -E 's/\[([^]]+)\]\([^)]*\)/\1/g; s/^#+ .*$//; s/^[[:space:]]*[*-] /- /; s/^[[:space:]]+//' \
-            | sed '/^$/d' \
-            | head -c 500 > distribution/whatsnew/whatsnew-en-US
-          cp distribution/whatsnew/whatsnew-en-US distribution/whatsnew/whatsnew-ja-JP
+        run: node .github/workflows/scripts/extract-release-notes.mjs CHANGELOG.md
       - name: Publish to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
