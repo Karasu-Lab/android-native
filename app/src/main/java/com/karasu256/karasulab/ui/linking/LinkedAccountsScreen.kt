@@ -33,7 +33,6 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.R
-import com.karasu256.karasulab.auth.CredentialAuthenticator
 import com.karasu256.karasulab.ui.component.ConfirmDialog
 import com.karasu256.karasulab.ui.component.ErrorRetry
 import com.karasu256.karasulab.ui.component.MinecraftAvatar
@@ -58,7 +57,6 @@ fun LinkedAccountsScreen(
     val providersState by providersViewModel.uiState.collectAsStateWithLifecycle()
     val providers = providersState.oauthProviders + listOfNotNull(providersState.minecraftProvider)
     val activity = LocalActivity.current
-    val credentials = remember(activity) { CredentialAuthenticator(checkNotNull(activity)) }
     val snackbarHostState = remember { SnackbarHostState() }
     val message = state.message?.resolve()
 
@@ -121,7 +119,7 @@ fun LinkedAccountsScreen(
                                     if (profile != null) {
                                         viewModel.askUnlink(provider)
                                     } else {
-                                        viewModel.link(provider, credentials)
+                                        viewModel.link(provider)
                                     }
                                 },
                                 enabled = state.profiles.isNotEmpty() && !busy && state.busyProviderId == null && (profile == null || state.canUnlink),
