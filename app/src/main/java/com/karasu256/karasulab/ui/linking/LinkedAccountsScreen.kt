@@ -36,6 +36,7 @@ import com.karasu256.karasulab.R
 import com.karasu256.karasulab.ui.component.ConfirmDialog
 import com.karasu256.karasulab.ui.component.ErrorRetry
 import com.karasu256.karasulab.ui.component.MinecraftAvatar
+import com.karasu256.karasulab.ui.component.ProviderIcon
 import com.karasu256.karasulab.ui.component.SettingsGroup
 import com.karasu256.karasulab.ui.component.SettingsItem
 import com.karasu256.karasulab.ui.component.UserAvatar
@@ -96,7 +97,6 @@ fun LinkedAccountsScreen(
                 item {
                     val profile = state.profiles[provider.id]
                     val busy = state.busyProviderId == provider.id
-                    val iconUrl = profile?.iconUrl
                     SettingsItem(
                         title = viewModel.profileTitle(provider, profile),
                         description = if (profile != null) {
@@ -104,13 +104,13 @@ fun LinkedAccountsScreen(
                         } else {
                             stringResource(R.string.connections_not_linked)
                         },
-                        leading = iconUrl?.let { url ->
-                            {
-                                if (provider.id == "minecraft") {
-                                    MinecraftAvatar(textureUrl = url)
-                                } else {
-                                    UserAvatar(id = provider.id, label = provider.label, imageUrl = url)
-                                }
+                        leading = {
+                            if (provider.id == "minecraft" && profile?.iconUrl != null) {
+                                MinecraftAvatar(textureUrl = profile.iconUrl)
+                            } else if (profile?.iconUrl != null) {
+                                UserAvatar(id = provider.id, label = provider.label, imageUrl = profile.iconUrl)
+                            } else {
+                                ProviderIcon(provider = provider)
                             }
                         },
                         trailing = {
