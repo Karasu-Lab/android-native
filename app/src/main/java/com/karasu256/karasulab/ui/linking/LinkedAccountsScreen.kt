@@ -122,7 +122,7 @@ fun LinkedAccountsScreen(
                                         viewModel.link(provider)
                                     }
                                 },
-                                enabled = state.profiles.isNotEmpty() && !busy && state.busyProviderId == null && (profile == null || state.canUnlink) && (profile != null || state.linkable[provider.id] != false),
+                                enabled = !busy && if (profile != null) state.canUnlink else state.linkable[provider.id] != false,
                             ) {
                                 if (busy) {
                                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
