@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/Karasu-Lab/android-native/compare/v1.2.0...v1.2.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* serialize Google Play uploads and retry with a new edit ([9d248df](https://github.com/Karasu-Lab/android-native/commit/9d248df3d8b79d35cb407e7ef56eab5f3951598e))
+
 ## [1.2.0](https://github.com/Karasu-Lab/android-native/compare/v1.1.0...v1.2.0) (2026-11-27)
 
 
