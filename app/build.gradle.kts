@@ -1,3 +1,4 @@
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.util.Properties
 
 plugins {
@@ -75,7 +76,7 @@ android {
             manifestPlaceholders["accountsHost"] = "dev-accounts.karasu256.com"
             manifestPlaceholders["accountsWildcardHost"] = "*.dev-accounts.karasu256.com"
             signingConfig = signingConfigs.findByName("debug")
-            firebaseCrashlytics {
+            configure<CrashlyticsExtension> {
                 nativeSymbolUploadEnabled = true
             }
         }
