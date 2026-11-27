@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/Karasu-Lab/android-native/compare/v1.5.0...v1.5.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* point the debug build at dev-api.karasu256.com ([e9b1279](https://github.com/Karasu-Lab/android-native/commit/e9b12791650f42274cf79c960c8232e05560fe67))
+
 ## [1.5.0](https://github.com/Karasu-Lab/android-native/compare/v1.4.0...v1.5.0) (2026-11-27)
 
 
