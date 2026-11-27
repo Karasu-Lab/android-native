@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/Karasu-Lab/android-native/compare/v1.8.0...v1.9.0) (2026-11-27)
+
+
+### Features
+
+* organize the settings menu into sections ([2aedb50](https://github.com/Karasu-Lab/android-native/commit/2aedb5059e6bceab98b3839864fc72643c4aaecd))
+
 ## [1.8.0](https://github.com/Karasu-Lab/android-native/compare/v1.7.1...v1.8.0) (2026-11-27)
 
 
