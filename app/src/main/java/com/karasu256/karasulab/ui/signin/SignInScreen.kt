@@ -122,7 +122,7 @@ fun SignInScreen(
                     onSubmit = viewModel::submitEmail,
                     onGoogle = { viewModel.signInWithGoogle(credentials) },
                     onPasskey = { viewModel.signInWithPasskey(credentials, fromStep = false) },
-                    onOAuth = viewModel::signInWithOAuth,
+                    onOAuth = { providerId -> viewModel.signInWithOAuth(providerId, credentials) },
                 )
 
                 SignInStep.Passkey -> PasskeyStep(
