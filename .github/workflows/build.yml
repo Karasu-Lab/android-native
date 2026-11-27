@@ -32,7 +32,7 @@ jobs:
           fi
 
   release_please:
-    name: Release Please
+    name: Compute build version
     runs-on: ubuntu-latest
     if: >-
       (github.event_name == 'push' &&
@@ -42,10 +42,6 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       !startsWith(github.head_ref, 'release-please--') &&
       !contains(github.event.pull_request.labels.*.name, 'autorelease: pending'))
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
     outputs:
       base_version: ${{ steps.version.outputs.base_version }}
       version_name: ${{ steps.version.outputs.version_name }}
@@ -64,14 +60,6 @@ jobs:
             echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
             echo "version_code=$(date +%s)"
           } >> "$GITHUB_OUTPUT"
-
-      - name: Run Release Please
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/preview' }}
-        uses: googleapis/release-please-action@v5
-        with:
-          target-branch: preview
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
 
   signing:
     name: Check signing configuration
