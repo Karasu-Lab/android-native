@@ -21,12 +21,13 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import coil3.SingletonImageLoader
-import com.google.firebase.crashlytics.FirebaseCrashlytics
 import coil3.request.ErrorResult
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.toBitmap
+import com.google.firebase.Firebase
+import com.google.firebase.crashlytics.crashlytics
 
 @Composable
 fun MinecraftAvatar(
@@ -43,8 +44,8 @@ fun MinecraftAvatar(
             is SuccessResult -> skin = result.image.toBitmap()
             is ErrorResult -> {
                 Log.e("MinecraftAvatar", "Could not load the skin texture $textureUrl", result.throwable)
-                FirebaseCrashlytics.getInstance().log("Could not load the skin texture $textureUrl")
-                FirebaseCrashlytics.getInstance().recordException(result.throwable)
+                Firebase.crashlytics.log("Could not load the skin texture $textureUrl")
+                Firebase.crashlytics.recordException(result.throwable)
             }
         }
     }

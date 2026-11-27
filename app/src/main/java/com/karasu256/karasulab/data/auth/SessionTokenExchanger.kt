@@ -1,7 +1,8 @@
 package com.karasu256.karasulab.data.auth
 
 import android.util.Log
-import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.firebase.Firebase
+import com.google.firebase.crashlytics.crashlytics
 import com.karasu256.karasulab.data.local.AccountEntity
 import com.karasu256.karasulab.data.local.AuthTokenEntity
 import com.karasu256.karasulab.data.local.SessionStore
@@ -34,18 +35,18 @@ class SessionTokenExchanger @Inject constructor(
                 "SessionTokenExchanger",
                 "get-session rejected the session cookie with ${response.code()}"
             )
-            FirebaseCrashlytics.getInstance().log("get-session rejected the session cookie with ${response.code()}")
+            Firebase.crashlytics.log("get-session rejected the session cookie with ${response.code()}")
             return null
         }
         if (!response.isSuccessful) throw HttpException(response)
         val body = response.body()?.use { it.string() } ?: run {
             Log.e("SessionTokenExchanger", "get-session returned an empty body")
-            FirebaseCrashlytics.getInstance().log("get-session returned an empty body")
+            Firebase.crashlytics.log("get-session returned an empty body")
             return null
         }
         val user = json.decodeFromString<GetSessionResponse?>(body)?.user ?: run {
             Log.e("SessionTokenExchanger", "get-session returned no user: $body")
-            FirebaseCrashlytics.getInstance().log("get-session returned no user: $body")
+            Firebase.crashlytics.log("get-session returned no user: $body")
             return null
         }
         val customToken = response.headers()["set-auth-jwt"] ?: run {
@@ -53,7 +54,7 @@ class SessionTokenExchanger @Inject constructor(
                 "SessionTokenExchanger",
                 "get-session returned no set-auth-jwt header: ${response.headers()}"
             )
-            FirebaseCrashlytics.getInstance().log("get-session returned no set-auth-jwt header")
+            Firebase.crashlytics.log("get-session returned no set-auth-jwt header")
             return null
         }
         if (rejectKnown && store.account(user.id) != null) throw AccountAlreadySignedInException(

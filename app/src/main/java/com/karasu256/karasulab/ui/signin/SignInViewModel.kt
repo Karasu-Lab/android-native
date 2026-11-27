@@ -3,8 +3,9 @@ package com.karasu256.karasulab.ui.signin
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.google.firebase.crashlytics.FirebaseCrashlytics
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.Firebase
+import com.google.firebase.crashlytics.crashlytics
 import com.karasu256.karasulab.R
 import com.karasu256.karasulab.auth.CredentialProvider
 import com.karasu256.karasulab.data.AccountRepository
@@ -65,7 +66,7 @@ class SignInViewModel @Inject constructor(
                     finish()
                 } else {
                     Log.e("SignInViewModel", "Native OAuth failed for ${completion.providerId}: ${completion.result}")
-                    FirebaseCrashlytics.getInstance().log("Native OAuth failed for ${completion.providerId}: ${completion.result}")
+                    Firebase.crashlytics.log("Native OAuth failed for ${completion.providerId}: ${completion.result}")
                     _uiState.update { it.copy(emailError = completion.result.toError(R.string.error_unknown)) }
                 }
             }
@@ -77,8 +78,8 @@ class SignInViewModel @Inject constructor(
                 }
                 .onFailure { error ->
                     Log.e("SignInViewModel", "Could not load sign-in providers", error)
-                    FirebaseCrashlytics.getInstance().log("Could not load sign-in providers")
-                    FirebaseCrashlytics.getInstance().recordException(error)
+                    Firebase.crashlytics.log("Could not load sign-in providers")
+                    Firebase.crashlytics.recordException(error)
                     _uiState.update { it.copy(providersLoading = false, providersError = UiText(R.string.error_unknown)) }
                 }
         }
@@ -188,8 +189,8 @@ class SignInViewModel @Inject constructor(
             val url = attempt { authRepository.startOAuthSignIn(providerId, _uiState.value.addingAccount) }
                 .getOrElse { error ->
                     Log.e("SignInViewModel", "Could not start $providerId sign-in", error)
-                    FirebaseCrashlytics.getInstance().log("Could not start $providerId sign-in")
-                    FirebaseCrashlytics.getInstance().recordException(error)
+                    Firebase.crashlytics.log("Could not start $providerId sign-in")
+                    Firebase.crashlytics.recordException(error)
                     _uiState.update { it.copy(emailError = error.toUiText(R.string.error_unknown)) }
                     return@launchBusy
                 }

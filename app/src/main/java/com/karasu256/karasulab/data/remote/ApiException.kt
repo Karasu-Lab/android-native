@@ -1,7 +1,8 @@
 package com.karasu256.karasulab.data.remote
 
 import android.util.Log
-import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.firebase.Firebase
+import com.google.firebase.crashlytics.crashlytics
 import kotlinx.serialization.json.Json
 import okhttp3.ResponseBody
 import retrofit2.HttpException
@@ -21,8 +22,8 @@ private fun parseErrorBody(raw: String?): ErrorBody? =
         runCatching { errorJson.decodeFromString<ErrorBody>(it) }
             .onFailure { error ->
                 Log.e("ApiException", "Unreadable error body: $it", error)
-                FirebaseCrashlytics.getInstance().log("Unreadable error body: $it")
-                FirebaseCrashlytics.getInstance().recordException(error)
+                Firebase.crashlytics.log("Unreadable error body: $it")
+                Firebase.crashlytics.recordException(error)
             }
             .getOrNull()
     }
@@ -50,8 +51,8 @@ suspend fun <T> attempt(block: suspend () -> T): Result<T> = try {
     throw e
 } catch (e: Exception) {
     Log.e("Attempt", "Operation failed: $e", e)
-    FirebaseCrashlytics.getInstance().log("Operation failed: $e")
-    FirebaseCrashlytics.getInstance().recordException(e)
+    Firebase.crashlytics.log("Operation failed: $e")
+    Firebase.crashlytics.recordException(e)
     Result.failure(e)
 }
 
