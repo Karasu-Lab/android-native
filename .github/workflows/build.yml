@@ -179,7 +179,7 @@ jobs:
           VERSION_NAME: ${{ needs.release_please.outputs.version_name }}
           VERSION_CODE: ${{ needs.release_please.outputs.version_code }}
         run: |
-          ./gradlew --no-daemon --offline ${{ steps.variant.outputs.tasks }} \
+          ./gradlew --no-daemon ${{ steps.variant.outputs.tasks }} \
             -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE" -Pdebuggable=false
       - name: Verify signed APK and report
         run: |
@@ -268,7 +268,7 @@ jobs:
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
         run: |
-          ./gradlew --no-daemon --offline ${{ steps.variant.outputs.tasks }} \
+          ./gradlew --no-daemon ${{ steps.variant.outputs.tasks }} \
             -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE" -Pdebuggable=false
 
       - name: Verify APK signature

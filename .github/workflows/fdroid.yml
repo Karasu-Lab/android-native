@@ -56,7 +56,7 @@ jobs:
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
         run: |
-          ./gradlew --no-daemon --offline :app:assembleNogmsDebug :app:assembleNogmsRelease \
+          ./gradlew --no-daemon :app:assembleNogmsDebug :app:assembleNogmsRelease \
             -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
 
       - name: Verify the nogms dependency graph has no GMS or Firebase

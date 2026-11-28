@@ -67,7 +67,7 @@ jobs:
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
         run: |
-          ./gradlew --no-daemon --offline :app:assembleGmsDebug \
+          ./gradlew --no-daemon :app:assembleGmsDebug \
             -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE" -Pdebuggable=false
 
       - name: Verify APK signature
