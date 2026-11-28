@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.14.1](https://github.com/Karasu-Lab/android-native/compare/v1.14.0...v1.14.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* Complete Google sign-in on the signing-in screen ([2fcfdd6](https://github.com/Karasu-Lab/android-native/commit/2fcfdd63d53d8d7a6b5c2452527fc91311995e17))
+* Show the signing-in screen as a sign-in step ([50fa30f](https://github.com/Karasu-Lab/android-native/commit/50fa30f2a7a6277dc2843f511295497b22252aeb))
+
+## [1.14.0](https://github.com/Karasu-Lab/android-native/compare/v1.13.1...v1.14.0) (2026-11-28)
+
+
+### Features
+
+* Add a build information section to the settings screen ([5903508](https://github.com/Karasu-Lab/android-native/commit/590350841ee768e4bcbecd2a36b59b12dd33a132))
+
+
+### Bug Fixes
+
+* Enable the local debug variant only in local builds ([8cd984f](https://github.com/Karasu-Lab/android-native/commit/8cd984fb9afda4ffe08daddc2b4b81170a67d9d9))
+* Read the default version name from the Release Please manifest ([3844e14](https://github.com/Karasu-Lab/android-native/commit/3844e1486a7a92660234ae38a4f20956f1fee719))
+
 ## [1.13.1](https://github.com/Karasu-Lab/android-native/compare/v1.13.0...v1.13.1) (2026-11-28)
 
 

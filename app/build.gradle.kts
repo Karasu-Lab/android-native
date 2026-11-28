@@ -196,8 +196,17 @@ val localProperties = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 
+val releasePleaseManifest = rootProject.file(".release-please-manifest.json")
+val releasePleaseVersion = if (releasePleaseManifest.exists()) {
+    Regex("\"\\.\"\\s*:\\s*\"([^\"]+)\"").find(releasePleaseManifest.readText())?.groupValues?.get(1)
+} else {
+    null
+}
+
+val isCiBuild = providers.environmentVariable("CI").orNull == "true"
+
 val appVersionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
-val appVersionName = project.findProperty("versionName")?.toString() ?: "1.0"
+val appVersionName = project.findProperty("versionName")?.toString() ?: releasePleaseVersion ?: "1.0"
 
 android {
     namespace = "com.karasu256.karasulab"
@@ -379,6 +388,12 @@ dependencies {
 }
 
 androidComponents {
+    beforeVariants(selector().withBuildType("debug")) {
+        it.enable = isCiBuild
+    }
+    beforeVariants(selector().withBuildType("localDebug")) {
+        it.enable = !isCiBuild
+    }
     beforeVariants(selector().withBuildType("localDebug").withFlavor("distribution" to "nogms")) {
         it.enable = false
     }

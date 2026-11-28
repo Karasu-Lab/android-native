@@ -61,6 +61,8 @@
     <string name="settings_title">アカウント設定</string>
     <string name="settings_section_general">一般</string>
     <string name="settings_section_other">その他</string>
+    <string name="settings_section_build_info">ビルド情報</string>
+    <string name="settings_build_type">ビルドタイプ</string>
     <string name="settings_client_version">クライアントバージョン</string>
     <string name="settings_release_channel">リリースチャンネル</string>
     <string name="settings_release_channel_production">Production</string>
