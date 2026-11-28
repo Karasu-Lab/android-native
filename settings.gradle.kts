@@ -15,8 +15,8 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 val requestedTaskNames = gradle.startParameter.taskNames
-val buildingFdroidOnly = requestedTaskNames.any { it.contains("fdroid", ignoreCase = true) } &&
-    requestedTaskNames.none { it.contains("standard", ignoreCase = true) }
+val buildingFdroidOnly = requestedTaskNames.isNotEmpty() &&
+    requestedTaskNames.all { it.contains("fdroid", ignoreCase = true) }
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)

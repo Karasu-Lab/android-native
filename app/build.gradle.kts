@@ -272,27 +272,37 @@ android {
         )
     }
 
-    flavorDimensions += listOf("channel", "distribution")
+    flavorDimensions += listOf("distribution")
 
     productFlavors {
-        create("standard") {
-            dimension = "channel"
-            isDefault = true
-            buildConfigField("boolean", "FDROID_BUILD", "false")
-        }
-        create("fdroid") {
-            dimension = "channel"
-            applicationId = "com.karasu256.karasulab.fdroid"
-            buildConfigField("boolean", "FDROID_BUILD", "true")
-        }
         create("gms") {
             dimension = "distribution"
             buildConfigField("boolean", "GMS_AVAILABLE", "true")
+            buildConfigField("boolean", "FDROID_BUILD", "false")
         }
         create("nogms") {
             dimension = "distribution"
             isDefault = true
             buildConfigField("boolean", "GMS_AVAILABLE", "false")
+            buildConfigField("boolean", "FDROID_BUILD", "false")
+        }
+        create("fdroid") {
+            dimension = "distribution"
+            applicationId = "com.karasu256.karasulab.fdroid"
+            buildConfigField("boolean", "GMS_AVAILABLE", "false")
+            buildConfigField("boolean", "FDROID_BUILD", "true")
+        }
+    }
+
+    sourceSets {
+        getByName("gms") {
+            java.srcDir("src/composeMarkdown/java")
+        }
+        getByName("nogms") {
+            java.srcDir("src/composeMarkdown/java")
+        }
+        getByName("fdroid") {
+            java.srcDirs("src/fdroid/java", "src/nogms/java")
         }
     }
 
@@ -426,7 +436,8 @@ dependencies {
     "gmsImplementation"(libs.firebase.crashlytics)
     "gmsImplementation"(libs.firebase.analytics)
     implementation(libs.multiplatform.settings)
-    "standardImplementation"(libs.compose.markdown)
+    "gmsImplementation"(libs.compose.markdown)
+    "nogmsImplementation"(libs.compose.markdown)
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -442,10 +453,9 @@ androidComponents {
     }
     onVariants { variant ->
         val isFdroid = variant.name.startsWith("fdroid")
-        val variantLabel = variant.name.removePrefix("standard").replaceFirstChar { it.lowercase() }
         variant.outputs.forEach { output ->
             output.versionCode.set(appVersionCode)
-            output.versionName.set("$baseVersionName-$variantLabel-$shortCommit+$appVersionCode")
+            output.versionName.set("$baseVersionName-${variant.name}-$shortCommit+$appVersionCode")
         }
         val capitalized = variant.name.replaceFirstChar { it.uppercase() }
         val licensesTask = tasks.register<GenerateLicensesTask>("generate${capitalized}Licenses") {
