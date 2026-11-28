@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.6](https://github.com/Karasu-Lab/android-native/compare/v1.16.5...v1.16.6) (2026-11-28)
+
+
+### Bug Fixes
+
+* throw credential errors instead of discarding them ([ea253a9](https://github.com/Karasu-Lab/android-native/commit/ea253a965df9a3db694a19a230b6a3d4dea78cbd))
+
 ## [1.16.5](https://github.com/Karasu-Lab/android-native/compare/v1.16.4...v1.16.5) (2026-11-28)
 
 
