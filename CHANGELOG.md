@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/Karasu-Lab/android-native/compare/v1.11.0...v1.12.0) (2026-11-28)
+
+
+### Features
+
+* publish to Google Play in a dedicated workflow with a Play Store signing key ([d7d4ca3](https://github.com/Karasu-Lab/android-native/commit/d7d4ca301abd0624d76ec119476c51443a1650ec))
+
 ## [1.11.0](https://github.com/Karasu-Lab/android-native/compare/v1.10.5...v1.11.0) (2026-11-28)
 
 
