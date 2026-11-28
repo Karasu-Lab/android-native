@@ -181,6 +181,8 @@ jobs:
   android-unsigned:
     name: Build unsigned release APK and AAB
     runs-on: ubuntu-latest
+    environment:
+      name: ${{ (github.event_name == 'pull_request' || github.ref == 'refs/heads/preview') && 'preview' || 'production' }}
     steps:
       - name: Check out source
         uses: actions/checkout@v7
