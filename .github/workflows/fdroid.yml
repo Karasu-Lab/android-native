@@ -78,7 +78,7 @@ jobs:
           SHORT_SHA=$(git rev-parse --short HEAD)
           COMMIT_COUNT=$(git rev-list --count HEAD)
           IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$BASE_VERSION"
-          VERSION_CODE=$((2000000000 + COMMIT_COUNT * 1000 + (V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH) % 1000))
+          VERSION_CODE=$((2000000000 + (V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH) * 1000 + COMMIT_COUNT % 1000))
           VERSION_NAME="${BASE_VERSION}-fdroidRelease-${SHORT_SHA}+${VERSION_CODE}"
           AAPT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/aapt"
           APK=$(ls app/build/outputs/apk/fdroid/release/*.apk | head -n1)

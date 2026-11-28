@@ -237,9 +237,9 @@ val commitCount = runCatching {
 }.getOrNull() ?: 0
 val derivedVersionCode = if (releasePleaseVersionParts.size >= 3) {
     val semverPart = releasePleaseVersionParts[0] * 10000 + releasePleaseVersionParts[1] * 100 + releasePleaseVersionParts[2]
-    2_000_000_000 + commitCount * 1000 + semverPart % 1000
+    2_000_000_000 + semverPart * 1000 + commitCount % 1000
 } else {
-    2_000_000_000 + commitCount * 1000
+    2_000_000_000 + commitCount % 1000
 }
 val appVersionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: derivedVersionCode
 val baseVersionName = releasePleaseVersion ?: "1.0.0"
