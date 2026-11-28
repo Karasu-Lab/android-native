@@ -216,9 +216,9 @@ val isCiBuild = providers.environmentVariable("CI").orNull == "true"
 
 val releasePleaseVersionParts = (releasePleaseVersion ?: "1.0.0").split(".").map { it.toIntOrNull() ?: 0 }
 val derivedVersionCode = if (releasePleaseVersionParts.size >= 3) {
-    releasePleaseVersionParts[0] * 10000 + releasePleaseVersionParts[1] * 100 + releasePleaseVersionParts[2]
+    2_000_000_000 + releasePleaseVersionParts[0] * 10000 + releasePleaseVersionParts[1] * 100 + releasePleaseVersionParts[2]
 } else {
-    1
+    2_000_000_001
 }
 val appVersionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: derivedVersionCode
 val baseVersionName = releasePleaseVersion ?: "1.0.0"
