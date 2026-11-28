@@ -48,7 +48,6 @@ jobs:
         env:
           SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           PLAYSTORE_SIGNING_ALIAS: ${{ vars.PLAYSTORE_SIGNING_ALIAS }}
           PLAYSTORE_SIGNING_PASS: ${{ secrets.PLAYSTORE_SIGNING_PASS }}
         run: |
@@ -57,11 +56,11 @@ jobs:
           else
             KEYSTORE_AVAILABLE=false
           fi
-          if [ "$KEYSTORE_AVAILABLE" = "true" ] && [ -n "$SIGNING_STORE_PASSWORD" ] && [ -n "$PLAYSTORE_SIGNING_ALIAS" ] && [ -n "$PLAYSTORE_SIGNING_PASS" ]; then
+          if [ "$KEYSTORE_AVAILABLE" = "true" ] && [ -n "$PLAYSTORE_SIGNING_ALIAS" ] && [ -n "$PLAYSTORE_SIGNING_PASS" ]; then
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "The repository signing key, the repository secret SIGNING_STORE_PASSWORD, the repository variable PLAYSTORE_SIGNING_ALIAS, or the repository secret PLAYSTORE_SIGNING_PASS is not available for this run. The Google Play upload will be skipped."
+            echo "The repository signing key, the repository variable PLAYSTORE_SIGNING_ALIAS, or the repository secret PLAYSTORE_SIGNING_PASS is not available for this run. The Google Play upload will be skipped."
           fi
 
   publish:
@@ -92,16 +91,14 @@ jobs:
 
       - name: Prepare Play Store signing key
         env:
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           PLAYSTORE_SIGNING_ALIAS: ${{ vars.PLAYSTORE_SIGNING_ALIAS }}
           PLAYSTORE_SIGNING_PASS: ${{ secrets.PLAYSTORE_SIGNING_PASS }}
         run: |
           tr -d ' \n\r' <<< '${{ secrets.SIGNING_KEY_BASE64 || secrets.SIGNING_KEY }}' | base64 -d > ./.keystore
-          STORE_PASS=$(tr -d '\n\r' <<< "$SIGNING_STORE_PASSWORD")
-          KEY_PASS=$(tr -d '\n\r' <<< "$PLAYSTORE_SIGNING_PASS")
+          STORE_PASS=$(tr -d '\n\r' <<< "$PLAYSTORE_SIGNING_PASS")
           KEY_ALIAS=$(tr -d '\n\r' <<< "$PLAYSTORE_SIGNING_ALIAS")
           if ! keytool -list -keystore ./.keystore -storepass "${STORE_PASS}" > /dev/null 2>&1; then
-            echo "::error::The signing key could not be opened with the repository secret SIGNING_STORE_PASSWORD."
+            echo "::error::The signing key could not be opened with the repository secret PLAYSTORE_SIGNING_PASS."
             exit 1
           fi
           if ! keytool -list -keystore ./.keystore -storepass "${STORE_PASS}" -alias "${KEY_ALIAS}" > /dev/null 2>&1; then
@@ -110,7 +107,7 @@ jobs:
           fi
           {
             echo "signing.storePassword=${STORE_PASS}"
-            echo "signing.keyPassword=${KEY_PASS}"
+            echo "signing.keyPassword=${STORE_PASS}"
             echo "signing.Alias=${KEY_ALIAS}"
           } > ./local.properties
           keytool -list -v -keystore ./.keystore -storepass "${STORE_PASS}" -alias "${KEY_ALIAS}"
