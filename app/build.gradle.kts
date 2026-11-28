@@ -222,10 +222,17 @@ val releasePleaseVersion = if (releasePleaseManifest.exists()) {
 val isCiBuild = providers.environmentVariable("CI").orNull == "true"
 
 val releasePleaseVersionParts = (releasePleaseVersion ?: "1.0.0").split(".").map { it.toIntOrNull() ?: 0 }
+val commitCount = runCatching {
+    providers.exec {
+        commandLine("git", "rev-list", "--count", "HEAD")
+        workingDir = rootProject.projectDir
+    }.standardOutput.asText.get().trim().toInt()
+}.getOrNull() ?: 0
 val derivedVersionCode = if (releasePleaseVersionParts.size >= 3) {
-    2_000_000_000 + releasePleaseVersionParts[0] * 10000 + releasePleaseVersionParts[1] * 100 + releasePleaseVersionParts[2]
+    val semverPart = releasePleaseVersionParts[0] * 10000 + releasePleaseVersionParts[1] * 100 + releasePleaseVersionParts[2]
+    2_000_000_000 + commitCount * 1000 + semverPart % 1000
 } else {
-    2_000_000_001
+    2_000_000_000 + commitCount * 1000
 }
 val appVersionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: derivedVersionCode
 val baseVersionName = releasePleaseVersion ?: "1.0.0"
