@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.0](https://github.com/Karasu-Lab/android-native/compare/v1.14.1...v1.15.0) (2026-11-28)
+
+
+### Features
+
+* attach nogms APKs to GitHub releases ([75e0f74](https://github.com/Karasu-Lab/android-native/commit/75e0f7489e52c9b637abbf3239cca65cde7f8da2))
+* include debug variants in GitHub release APKs ([fe766a0](https://github.com/Karasu-Lab/android-native/commit/fe766a0099adffef5ad4a4d42a20e2f1f960fdb4))
+
 ## [1.14.1](https://github.com/Karasu-Lab/android-native/compare/v1.14.0...v1.14.1) (2026-11-28)
 
 
