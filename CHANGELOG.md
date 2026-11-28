@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.4](https://github.com/Karasu-Lab/android-native/compare/v1.16.3...v1.16.4) (2026-11-28)
+
+
+### Bug Fixes
+
+* include the shared sources as Kotlin sources and skip Google Services for fdroid builds ([0bba29f](https://github.com/Karasu-Lab/android-native/commit/0bba29f489acc97cd6e18456a9af4c401ceb8307))
+
 ## [1.16.3](https://github.com/Karasu-Lab/android-native/compare/v1.16.2...v1.16.3) (2026-11-28)
 
 
