@@ -144,15 +144,30 @@ class SignInViewModel @Inject constructor(
 
     fun signInWithGoogle(credentials: CredentialProvider) {
         val flow = ProviderLoginFlow.forProvider("google", authRepository)
+        activeFlow = flow
         launchBusy(ProviderMethod.Google) {
             val start = attempt { flow.start("google", _uiState.value.addingAccount, credentials) }
                 .getOrElse { error ->
                     _uiState.update { it.copy(emailError = error.toUiText(R.string.error_google_failed)) }
                     return@launchBusy
                 }
-            if (start is LoginStart.Completed) {
-                start.result.toError(R.string.error_google_failed)?.let { error -> _uiState.update { it.copy(emailError = error) } }
-                if (start.result == SignInResult.Success) finish()
+            when (start) {
+                is LoginStart.Browser -> _openBrowser.send(start.url)
+                is LoginStart.Credential -> {
+                    _uiState.update { it.copy(completingOAuth = true) }
+                    val outcome = attempt { flow.finish(start.value, "", _uiState.value.addingAccount) }
+                        .getOrElse { error ->
+                            _uiState.update { it.copy(emailError = error.toUiText(R.string.error_google_failed), completingOAuth = false) }
+                            return@launchBusy
+                        }
+                    outcome.toError(R.string.error_google_failed)?.let { error -> _uiState.update { it.copy(emailError = error, completingOAuth = false) } }
+                    if (outcome == SignInResult.Success) finish()
+                }
+                is LoginStart.Completed -> {
+                    start.result.toError(R.string.error_google_failed)?.let { error -> _uiState.update { it.copy(emailError = error) } }
+                    if (start.result == SignInResult.Success) finish()
+                }
+                LoginStart.Cancelled -> Unit
             }
         }
     }

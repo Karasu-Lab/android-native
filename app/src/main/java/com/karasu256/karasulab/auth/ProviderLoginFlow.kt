@@ -7,6 +7,8 @@ import com.karasu256.karasulab.data.SignInResult
 sealed interface LoginStart {
     data class Browser(val url: String) : LoginStart
 
+    data class Credential(val value: String) : LoginStart
+
     data class Completed(val result: SignInResult) : LoginStart
 
     data object Cancelled : LoginStart
@@ -41,11 +43,11 @@ open class ProviderLoginFlow(
 class GoogleLoginFlow(authRepository: AuthRepository) : ProviderLoginFlow(authRepository) {
     override suspend fun start(providerId: String, addingAccount: Boolean, credentials: CredentialProvider): LoginStart {
         val idToken = credentials.requestGoogleIdToken() ?: return LoginStart.Cancelled
-        return complete(authRepository.signInWithGoogle(idToken, addingAccount))
+        return LoginStart.Credential(idToken)
     }
 
     override suspend fun finish(token: String, state: String, addingAccount: Boolean): SignInResult =
-        checkNotNull(completedResult) { "The Google sign-in completes in the start flow" }
+        authRepository.signInWithGoogle(token, addingAccount)
 }
 
 class PasskeyLoginFlow(authRepository: AuthRepository, private val email: String?) : ProviderLoginFlow(authRepository) {
