@@ -124,20 +124,24 @@ jobs:
         id: variant
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "tasks=:app:assembleGmsDebug :app:bundleGmsDebug" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsDebug :app:bundleGmsDebug :app:assembleNogmsDebug" >> "$GITHUB_OUTPUT"
             echo "apk_dir=app/build/outputs/apk/gms/debug" >> "$GITHUB_OUTPUT"
+            echo "nogms_apk_dir=app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
               echo "app/build/outputs/apk/gms/debug/*.apk"
+              echo "app/build/outputs/apk/nogms/debug/*.apk"
               echo "app/build/outputs/bundle/**/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           else
-            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease :app:assembleNogmsRelease" >> "$GITHUB_OUTPUT"
             echo "apk_dir=app/build/outputs/apk/gms/release" >> "$GITHUB_OUTPUT"
+            echo "nogms_apk_dir=app/build/outputs/apk/nogms/release" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
               echo "app/build/outputs/apk/gms/release/*.apk"
+              echo "app/build/outputs/apk/nogms/release/*.apk"
               echo "app/build/outputs/bundle/**/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
@@ -188,18 +192,24 @@ jobs:
       - name: Verify signed APK and report
         run: |
           APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
-          APK=$(ls ${{ steps.variant.outputs.apk_dir }}/*.apk | head -n1)
-          REPORT=${{ steps.variant.outputs.apk_dir }}/apksigner-report.txt
-          set +e
-          "$APKSIGNER" verify --verbose --print-certs "$APK" > "$REPORT" 2>&1
-          STATUS=$?
-          set -e
-          {
-            echo "## APK signature verification"
-            echo '```'
-            cat "$REPORT"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          STATUS=0
+          for APK_DIR in "${{ steps.variant.outputs.apk_dir }}" "${{ steps.variant.outputs.nogms_apk_dir }}"; do
+            APK=$(ls "$APK_DIR"/*.apk | head -n1)
+            REPORT="$APK_DIR/apksigner-report.txt"
+            set +e
+            "$APKSIGNER" verify --verbose --print-certs "$APK" > "$REPORT" 2>&1
+            APK_STATUS=$?
+            set -e
+            if [ "$APK_STATUS" -ne 0 ]; then
+              STATUS="$APK_STATUS"
+            fi
+            {
+              echo "## APK signature verification"
+              echo '```'
+              cat "$REPORT"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          done
           exit "$STATUS"
       - name: Upload signed APK and AAB
         uses: actions/upload-artifact@v7
@@ -223,19 +233,23 @@ jobs:
         id: variant
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "tasks=:app:assembleGmsDebug" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsDebug :app:assembleNogmsDebug" >> "$GITHUB_OUTPUT"
             echo "apk_dir=app/build/outputs/apk/gms/debug" >> "$GITHUB_OUTPUT"
+            echo "nogms_apk_dir=app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
               echo "app/build/outputs/apk/gms/debug/*.apk"
+              echo "app/build/outputs/apk/nogms/debug/*.apk"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           else
-            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease :app:assembleNogmsRelease" >> "$GITHUB_OUTPUT"
             echo "apk_dir=app/build/outputs/apk/gms/release" >> "$GITHUB_OUTPUT"
+            echo "nogms_apk_dir=app/build/outputs/apk/nogms/release" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
               echo "app/build/outputs/apk/gms/release/*.apk"
+              echo "app/build/outputs/apk/nogms/release/*.apk"
               echo "app/build/outputs/bundle/**/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
@@ -279,17 +293,19 @@ jobs:
       - name: Verify APK signature
         run: |
           APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
-          APK=$(ls ${{ steps.variant.outputs.apk_dir }}/*.apk | head -n1)
-          REPORT=${{ steps.variant.outputs.apk_dir }}/apksigner-report.txt
-          set +e
-          "$APKSIGNER" verify --print-certs -v "$APK" > "$REPORT" 2>&1
-          set -e
-          {
-            echo "## APK signature verification"
-            echo '```'
-            cat "$REPORT"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          for APK_DIR in "${{ steps.variant.outputs.apk_dir }}" "${{ steps.variant.outputs.nogms_apk_dir }}"; do
+            APK=$(ls "$APK_DIR"/*.apk | head -n1)
+            REPORT="$APK_DIR/apksigner-report.txt"
+            set +e
+            "$APKSIGNER" verify --print-certs -v "$APK" > "$REPORT" 2>&1
+            set -e
+            {
+              echo "## APK signature verification"
+              echo '```'
+              cat "$REPORT"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          done
 
       - name: Upload unsigned APK and AAB
         uses: actions/upload-artifact@v7
