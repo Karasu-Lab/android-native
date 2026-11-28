@@ -11,27 +11,23 @@ RepoType: git
 Repo: https://github.com/Karasu-Lab/android-native.git
 
 Builds:
-  - versionName: 1.16.1
-    versionCode: 2000330601
-    commit: v1.16.1
+  - versionName: 1.16.4
+    versionCode: 2011604344
+    commit: v1.16.4
     subdir: app
     prebuild:
       - $$SDK$$/cmdline-tools/latest/bin/sdkmanager --channel=3 "platforms;android-37.1" "build-tools;37.0.0"
     gradle:
       - fdroid
-      - nogms
     rm:
       - app/src/gmsDebug/google-services.json
       - app/src/gmsRelease/google-services.json
       - app/src/gmsLocalDebug/google-services.json
-      - app/src/standardGmsDebug/google-services.json
-      - app/src/standardGmsRelease/google-services.json
-      - app/src/standardGmsLocalDebug/google-services.json
-      - app/src/fdroidGmsDebug/google-services.json
-      - app/src/fdroidGmsRelease/google-services.json
-      - app/src/fdroidGmsLocalDebug/google-services.json
+      - app/src/fdroidDebug/google-services.json
+      - app/src/fdroidRelease/google-services.json
+      - app/src/fdroidLocalDebug/google-services.json
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.16.1
-CurrentVersionCode: 2000330601
+CurrentVersion: 1.16.4
+CurrentVersionCode: 2011604344

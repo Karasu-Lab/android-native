@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.16.5](https://github.com/Karasu-Lab/android-native/compare/v1.16.4...v1.16.5) (2026-11-28)
+
+
+### Bug Fixes
+
+* order the version code by the release version before the commit count ([3f1ab5d](https://github.com/Karasu-Lab/android-native/commit/3f1ab5da2635bb88453a5a1dbb48f5e885251a97))
+
+## [1.16.4](https://github.com/Karasu-Lab/android-native/compare/v1.16.3...v1.16.4) (2026-11-28)
+
+
+### Bug Fixes
+
+* include the shared sources as Kotlin sources and skip Google Services for fdroid builds ([0bba29f](https://github.com/Karasu-Lab/android-native/commit/0bba29f489acc97cd6e18456a9af4c401ceb8307))
+
+## [1.16.3](https://github.com/Karasu-Lab/android-native/compare/v1.16.2...v1.16.3) (2026-11-28)
+
+
+### Bug Fixes
+
+* drop the redundant standard label from the version name ([bbaa10f](https://github.com/Karasu-Lab/android-native/commit/bbaa10f2cd9a379f913da20bacacd4aaf4bf0076))
+
 ## [1.16.2](https://github.com/Karasu-Lab/android-native/compare/v1.16.1...v1.16.2) (2026-11-28)
 
 

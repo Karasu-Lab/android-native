@@ -63,7 +63,7 @@ jobs:
           {
             echo "base_version=${BASE_VERSION}"
             echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
-            echo "version_code=$((2000000000 + COMMIT_COUNT * 1000 + (V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH) % 1000))"
+            echo "version_code=$((2000000000 + (V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH) * 1000 + COMMIT_COUNT % 1000))"
           } >> "$GITHUB_OUTPUT"
 
   signing:
@@ -127,24 +127,24 @@ jobs:
         id: variant
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "tasks=:app:assembleStandardGmsDebug :app:bundleStandardGmsDebug :app:assembleStandardNogmsDebug" >> "$GITHUB_OUTPUT"
-            echo "apk_dirs=app/build/outputs/apk/standardGms/debug app/build/outputs/apk/standardNogms/debug" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsDebug :app:bundleGmsDebug :app:assembleNogmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dirs=app/build/outputs/apk/gms/debug app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
-              echo "app/build/outputs/apk/standardGms/debug/*.apk"
-              echo "app/build/outputs/apk/standardNogms/debug/*.apk"
+              echo "app/build/outputs/apk/gms/debug/*.apk"
+              echo "app/build/outputs/apk/nogms/debug/*.apk"
               echo "app/build/outputs/bundle/**/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           else
-            echo "tasks=:app:assembleStandardGmsRelease :app:bundleStandardGmsRelease :app:assembleStandardNogmsRelease :app:assembleStandardGmsDebug :app:bundleStandardGmsDebug :app:assembleStandardNogmsDebug" >> "$GITHUB_OUTPUT"
-            echo "apk_dirs=app/build/outputs/apk/standardGms/release app/build/outputs/apk/standardNogms/release app/build/outputs/apk/standardGms/debug app/build/outputs/apk/standardNogms/debug" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease :app:assembleNogmsRelease :app:assembleGmsDebug :app:bundleGmsDebug :app:assembleNogmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dirs=app/build/outputs/apk/gms/release app/build/outputs/apk/nogms/release app/build/outputs/apk/gms/debug app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
-              echo "app/build/outputs/apk/standardGms/release/*.apk"
-              echo "app/build/outputs/apk/standardNogms/release/*.apk"
-              echo "app/build/outputs/apk/standardGms/debug/*.apk"
-              echo "app/build/outputs/apk/standardNogms/debug/*.apk"
+              echo "app/build/outputs/apk/gms/release/*.apk"
+              echo "app/build/outputs/apk/nogms/release/*.apk"
+              echo "app/build/outputs/apk/gms/debug/*.apk"
+              echo "app/build/outputs/apk/nogms/debug/*.apk"
               echo "app/build/outputs/bundle/**/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
@@ -236,23 +236,23 @@ jobs:
         id: variant
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "tasks=:app:assembleStandardGmsDebug :app:assembleStandardNogmsDebug" >> "$GITHUB_OUTPUT"
-            echo "apk_dirs=app/build/outputs/apk/standardGms/debug app/build/outputs/apk/standardNogms/debug" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsDebug :app:assembleNogmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dirs=app/build/outputs/apk/gms/debug app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
-              echo "app/build/outputs/apk/standardGms/debug/*.apk"
-              echo "app/build/outputs/apk/standardNogms/debug/*.apk"
+              echo "app/build/outputs/apk/gms/debug/*.apk"
+              echo "app/build/outputs/apk/nogms/debug/*.apk"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           else
-            echo "tasks=:app:assembleStandardGmsRelease :app:bundleStandardGmsRelease :app:assembleStandardNogmsRelease :app:assembleStandardGmsDebug :app:assembleStandardNogmsDebug" >> "$GITHUB_OUTPUT"
-            echo "apk_dirs=app/build/outputs/apk/standardGms/release app/build/outputs/apk/standardNogms/release app/build/outputs/apk/standardGms/debug app/build/outputs/apk/standardNogms/debug" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease :app:assembleNogmsRelease :app:assembleGmsDebug :app:assembleNogmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dirs=app/build/outputs/apk/gms/release app/build/outputs/apk/nogms/release app/build/outputs/apk/gms/debug app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
-              echo "app/build/outputs/apk/standardGms/release/*.apk"
-              echo "app/build/outputs/apk/standardNogms/release/*.apk"
-              echo "app/build/outputs/apk/standardGms/debug/*.apk"
-              echo "app/build/outputs/apk/standardNogms/debug/*.apk"
+              echo "app/build/outputs/apk/gms/release/*.apk"
+              echo "app/build/outputs/apk/nogms/release/*.apk"
+              echo "app/build/outputs/apk/gms/debug/*.apk"
+              echo "app/build/outputs/apk/nogms/debug/*.apk"
               echo "app/build/outputs/bundle/**/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
@@ -267,7 +267,7 @@ jobs:
           IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$BASE_VERSION"
           {
             echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
-            echo "version_code=$((2000000000 + COMMIT_COUNT * 1000 + (V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH) % 1000))"
+            echo "version_code=$((2000000000 + (V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH) * 1000 + COMMIT_COUNT % 1000))"
           } >> "$GITHUB_OUTPUT"
 
       - name: Set up Java

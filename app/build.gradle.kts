@@ -194,15 +194,22 @@ SOFTWARE.
 }
 
 val requestedTaskNames = gradle.startParameter.taskNames
-val buildingNoGmsOnly = requestedTaskNames.any { it.contains("nogms", ignoreCase = true) } &&
-    requestedTaskNames.none { it.replace("nogms", "", ignoreCase = true).contains("gms", ignoreCase = true) }
+val buildingNoGmsOnly = requestedTaskNames.any {
+    it.contains("nogms", ignoreCase = true) || it.contains("fdroid", ignoreCase = true)
+} && requestedTaskNames.none {
+    it.replace("nogms", "", ignoreCase = true).replace("fdroid", "", ignoreCase = true)
+        .contains("gms", ignoreCase = true)
+}
 if (!buildingNoGmsOnly) {
     apply(plugin = "com.google.gms.google-services")
     apply(plugin = "com.google.firebase.crashlytics")
 }
 
 tasks.configureEach {
-    if (name.startsWith("process") && name.contains("Nogms") && name.endsWith("GoogleServices")) {
+    if (name.startsWith("process") &&
+        (name.contains("Nogms") || name.contains("Fdroid")) &&
+        name.endsWith("GoogleServices")
+    ) {
         enabled = false
     }
 }
@@ -230,9 +237,9 @@ val commitCount = runCatching {
 }.getOrNull() ?: 0
 val derivedVersionCode = if (releasePleaseVersionParts.size >= 3) {
     val semverPart = releasePleaseVersionParts[0] * 10000 + releasePleaseVersionParts[1] * 100 + releasePleaseVersionParts[2]
-    2_000_000_000 + commitCount * 1000 + semverPart % 1000
+    2_000_000_000 + semverPart * 1000 + commitCount % 1000
 } else {
-    2_000_000_000 + commitCount * 1000
+    2_000_000_000 + commitCount % 1000
 }
 val appVersionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: derivedVersionCode
 val baseVersionName = releasePleaseVersion ?: "1.0.0"
@@ -272,27 +279,40 @@ android {
         )
     }
 
-    flavorDimensions += listOf("channel", "distribution")
+    flavorDimensions += listOf("distribution")
 
     productFlavors {
-        create("standard") {
-            dimension = "channel"
-            isDefault = true
-            buildConfigField("boolean", "FDROID_BUILD", "false")
-        }
-        create("fdroid") {
-            dimension = "channel"
-            applicationId = "com.karasu256.karasulab.fdroid"
-            buildConfigField("boolean", "FDROID_BUILD", "true")
-        }
         create("gms") {
             dimension = "distribution"
             buildConfigField("boolean", "GMS_AVAILABLE", "true")
+            buildConfigField("boolean", "FDROID_BUILD", "false")
         }
         create("nogms") {
             dimension = "distribution"
             isDefault = true
             buildConfigField("boolean", "GMS_AVAILABLE", "false")
+            buildConfigField("boolean", "FDROID_BUILD", "false")
+        }
+        create("fdroid") {
+            dimension = "distribution"
+            applicationId = "com.karasu256.karasulab.fdroid"
+            buildConfigField("boolean", "GMS_AVAILABLE", "false")
+            buildConfigField("boolean", "FDROID_BUILD", "true")
+        }
+    }
+
+    sourceSets {
+        getByName("gms") {
+            java.srcDir("src/composeMarkdown/java")
+            kotlin.srcDir("src/composeMarkdown/java")
+        }
+        getByName("nogms") {
+            java.srcDir("src/composeMarkdown/java")
+            kotlin.srcDir("src/composeMarkdown/java")
+        }
+        getByName("fdroid") {
+            java.srcDirs("src/fdroid/java", "src/nogms/java")
+            kotlin.srcDirs("src/fdroid/java", "src/nogms/java")
         }
     }
 
@@ -426,7 +446,8 @@ dependencies {
     "gmsImplementation"(libs.firebase.crashlytics)
     "gmsImplementation"(libs.firebase.analytics)
     implementation(libs.multiplatform.settings)
-    "standardImplementation"(libs.compose.markdown)
+    "gmsImplementation"(libs.compose.markdown)
+    "nogmsImplementation"(libs.compose.markdown)
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -442,10 +463,9 @@ androidComponents {
     }
     onVariants { variant ->
         val isFdroid = variant.name.startsWith("fdroid")
-        val variantLabel = variant.name.removePrefix("standard").replaceFirstChar { it.lowercase() }
         variant.outputs.forEach { output ->
             output.versionCode.set(appVersionCode)
-            output.versionName.set("$baseVersionName-$variantLabel-$shortCommit+$appVersionCode")
+            output.versionName.set("$baseVersionName-${variant.name}-$shortCommit+$appVersionCode")
         }
         val capitalized = variant.name.replaceFirstChar { it.uppercase() }
         val licensesTask = tasks.register<GenerateLicensesTask>("generate${capitalized}Licenses") {

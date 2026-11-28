@@ -21,22 +21,22 @@ release builds are unsigned.
 
 ## Build
 
-The app has two flavor dimensions. The `channel` dimension is
-`standard` or `fdroid`, and the `distribution` dimension is `gms` or
-`nogms`. The `gms` flavor includes Google Mobile Services and Firebase
-and uses the native Google sign-in. The `nogms` flavor has no GMS or
-Firebase dependency, disables Firebase features, and uses the standard
-web provider flow for Google sign-in. Every flavor combination provides
-debug, localDebug and release build types. The standard build is the
-release build type with no local build type and the `nogms`
-distribution.
-The application ID is `com.karasu256.karasulab` for the `standard`
-channel and `com.karasu256.karasulab.fdroid` for the `fdroid` channel,
-except for the `localDebug` build type, which adds the `.debug` suffix.
+The app has one flavor dimension, `distribution`, with the `gms`,
+`nogms` and `fdroid` flavors. The `gms` flavor includes Google Mobile
+Services and Firebase and uses the native Google sign-in. The `nogms`
+flavor has no GMS or Firebase dependency, disables Firebase features,
+and uses the standard web provider flow for Google sign-in. The
+`fdroid` flavor is the nogms feature set for distribution through
+F-Droid. Every flavor provides debug, localDebug and release build
+types. The standard build is the release build type with no local
+build type and the `nogms` distribution.
+The application ID is `com.karasu256.karasulab`, except for the
+`fdroid` flavor, which uses `com.karasu256.karasulab.fdroid`, and the
+`localDebug` build type, which adds the `.debug` suffix.
 The `localDebug` build type inherits the debug configuration.
 Its google-services configuration is placed in
 `app/src/gmsLocalDebug/google-services.json`. The debug and release
-build types use the channel application ID.
+build types use the flavor application ID.
 Which debug variant is available depends on the environment: the
 debug variants are enabled in CI only, and the `localDebug` variants
 are enabled in local builds only, so a local build uses a
@@ -44,43 +44,44 @@ are enabled in local builds only, so a local build uses a
 
 The version is derived from the Release Please manifest
 (`.release-please-manifest.json`). The version code is
-`2000000000 + commit count * 1000 + (major * 10000 + minor * 100 + patch) % 1000`,
+`2000000000 + (major * 10000 + minor * 100 + patch) * 1000 + commit count % 1000`,
 where the commit count is the number of commits reachable from HEAD.
 The offset keeps every version code above the timestamp-based version
 codes that were published to Google Play before this scheme was
 introduced, while staying below the maximum version code of
-2100000000. The commit count makes the version code increase with
-every commit, so the stores can deliver an update for every build,
+2100000000. The Release Please version orders the version code first,
+so a build of a newer version always updates an older one across
+branches, and the commit count orders the builds of the same version
+by commit, so the stores can deliver an update for every build,
 including several builds of the same Release Please version. Every
 variant is named `<version>-<variant>-<short commit>+<version code>`,
-for example `1.16.1-fdroidNogmsRelease-0123abc+2000330601`. The
-standard channel adds no label of its own, so the standard gms release
-variant is named `1.16.1-gmsRelease-0123abc+2000330601`, for example.
+for example `1.16.4-fdroidRelease-0123abc+2011604344` and
+`1.16.4-gmsRelease-0123abc+2011604344`.
 
-Build and test the standard gms debug variant with Gradle in CI:
+Build and test the gms debug variant with Gradle in CI:
 
 ```sh
-./gradlew :app:assembleStandardGmsDebug
-./gradlew :app:testStandardGmsDebugUnitTest
+./gradlew :app:assembleGmsDebug
+./gradlew :app:testGmsDebugUnitTest
 ```
 
 To build the local debug variant with its own application ID:
 
 ```sh
-./gradlew :app:assembleStandardGmsLocalDebug
+./gradlew :app:assembleGmsLocalDebug
 ```
 
-To build a standard gms release APK and Android App Bundle:
+To build a gms release APK and Android App Bundle:
 
 ```sh
-./gradlew :app:assembleStandardGmsRelease :app:bundleStandardGmsRelease
+./gradlew :app:assembleGmsRelease :app:bundleGmsRelease
 ```
 
-To build the F-Droid variant, which is the fdroid channel, the nogms
-distribution and the release build type:
+To build the F-Droid variant, which is the fdroid flavor and the
+release build type:
 
 ```sh
-./gradlew :app:assembleFdroidNogmsRelease
+./gradlew :app:assembleFdroidRelease
 ```
 
 The fdroid variant does not include the JitPack dependency used for
