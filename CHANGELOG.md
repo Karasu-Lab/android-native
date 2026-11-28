@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.4](https://github.com/Karasu-Lab/android-native/compare/v1.10.3...v1.10.4) (2026-11-28)
+
+
+### Bug Fixes
+
+* make the current session check a suspend function ([7d15392](https://github.com/Karasu-Lab/android-native/commit/7d15392a21736dec1ced265ec9cf5a27667ba140))
+* revoke active sessions in parallel ([1056073](https://github.com/Karasu-Lab/android-native/commit/1056073c109e0a3266d0fa1ebce634f1e9a80071))
+
 ## [1.10.3](https://github.com/Karasu-Lab/android-native/compare/v1.10.2...v1.10.3) (2026-11-28)
 
 
