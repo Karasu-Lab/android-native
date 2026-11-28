@@ -15,6 +15,8 @@ Builds:
     versionCode: 11500
     commit: v1.15.0
     subdir: app
+    prebuild:
+      - $$SDK$$/cmdline-tools/latest/bin/sdkmanager --channel=3 "platforms;android-37.1" "build-tools;37.0.0"
     gradle:
       - fdroid
       - nogms
