@@ -36,14 +36,13 @@ jobs:
     name: Compute build version
     runs-on: ubuntu-latest
     if: >-
-      (github.event.action != 'edited' || github.event.changes.base != null) &&
-      (((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
       github.ref == 'refs/heads/preview')) ||
       (github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       !startsWith(github.head_ref, 'release-please--') &&
-      !contains(github.event.pull_request.labels.*.name, 'autorelease: pending')))
+      !contains(github.event.pull_request.labels.*.name, 'autorelease: pending'))
     outputs:
       base_version: ${{ steps.version.outputs.base_version }}
       version_name: ${{ steps.version.outputs.version_name }}
@@ -67,7 +66,6 @@ jobs:
   signing:
     name: Check signing configuration
     runs-on: ubuntu-latest
-    if: github.event.action != 'edited' || github.event.changes.base != null
     environment:
       name: ${{ (github.event_name == 'pull_request' || github.ref == 'refs/heads/preview') && 'preview' || 'production' }}
     outputs:
@@ -110,7 +108,6 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       needs.signing.outputs.available == 'true' &&
-      (github.event.action != 'edited' || github.event.changes.base != null) &&
       (((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
       github.ref == 'refs/heads/preview')) ||
