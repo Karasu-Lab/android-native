@@ -3,13 +3,8 @@ package com.karasu256.karasulab.ui.signin
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -96,12 +91,12 @@ fun SignInScreen(
     }
     BackHandler(enabled = state.step != SignInStep.Email) { viewModel.goBack() }
     BackHandler(enabled = state.busy) {}
-    BackHandler(enabled = state.completingOAuth) {}
+    BackHandler(enabled = state.step == SignInStep.SigningIn) {}
 
-    Box(modifier = Modifier.fillMaxSize()) {
     AuthFrame(
         busy = state.busy,
         onBack = when {
+            state.step == SignInStep.SigningIn -> null
             state.step != SignInStep.Email -> ({ viewModel.goBack() })
             addAccount -> ({ navigator.popBackStack() })
             else -> null
@@ -138,33 +133,25 @@ fun SignInScreen(
                     onSubmit = viewModel::submitCode,
                     onResend = viewModel::startCode,
                 )
+
+                SignInStep.SigningIn -> SigningInStep()
             }
         }
-    }
-
-    if (state.completingOAuth) {
-        SigningInOverlay()
-    }
     }
 }
 
 @Composable
-private fun SigningInOverlay() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
-        contentAlignment = Alignment.Center,
+private fun SigningInStep() {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 64.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator()
-            Text(
-                text = stringResource(R.string.signing_in),
-                modifier = Modifier.padding(top = 16.dp),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        }
+        CircularProgressIndicator()
+        Text(
+            text = stringResource(R.string.signing_in),
+            modifier = Modifier.padding(top = 16.dp),
+            style = MaterialTheme.typography.bodyLarge,
+        )
     }
 }
 

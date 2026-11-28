@@ -59,7 +59,13 @@ class SignInViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             authRepository.oauthSignInInProgress.collect { inProgress ->
-                _uiState.update { it.copy(completingOAuth = inProgress) }
+                _uiState.update {
+                    when {
+                        inProgress -> it.copy(step = SignInStep.SigningIn)
+                        it.step == SignInStep.SigningIn -> it.copy(step = SignInStep.Email)
+                        else -> it
+                    }
+                }
             }
         }
         viewModelScope.launch {
@@ -69,7 +75,7 @@ class SignInViewModel @Inject constructor(
                     finish()
                 } else {
                     Log.e("SignInViewModel", "Native OAuth failed for ${completion.providerId}: ${completion.result}")
-                    _uiState.update { it.copy(emailError = completion.result.toError(R.string.error_unknown)) }
+                    _uiState.update { it.copy(step = SignInStep.Email, emailError = completion.result.toError(R.string.error_unknown)) }
                 }
             }
         }
@@ -89,6 +95,7 @@ class SignInViewModel @Inject constructor(
     fun goBack(): Boolean {
         val state = _uiState.value
         if (state.busy) return true
+        if (state.step == SignInStep.SigningIn) return true
         if (state.step == SignInStep.Email) return false
         _uiState.update { it.copy(step = SignInStep.Email) }
         return true
@@ -154,13 +161,13 @@ class SignInViewModel @Inject constructor(
             when (start) {
                 is LoginStart.Browser -> _openBrowser.send(start.url)
                 is LoginStart.Credential -> {
-                    _uiState.update { it.copy(completingOAuth = true) }
+                    _uiState.update { it.copy(step = SignInStep.SigningIn) }
                     val outcome = attempt { flow.finish(start.value, "", _uiState.value.addingAccount) }
                         .getOrElse { error ->
-                            _uiState.update { it.copy(emailError = error.toUiText(R.string.error_google_failed), completingOAuth = false) }
+                            _uiState.update { it.copy(step = SignInStep.Email, emailError = error.toUiText(R.string.error_google_failed)) }
                             return@launchBusy
                         }
-                    outcome.toError(R.string.error_google_failed)?.let { error -> _uiState.update { it.copy(emailError = error, completingOAuth = false) } }
+                    outcome.toError(R.string.error_google_failed)?.let { error -> _uiState.update { it.copy(step = SignInStep.Email, emailError = error) } }
                     if (outcome == SignInResult.Success) finish()
                 }
                 is LoginStart.Completed -> {
@@ -173,7 +180,7 @@ class SignInViewModel @Inject constructor(
     }
 
     private fun onOAuthCallback(uri: Uri) {
-        _uiState.update { it.copy(completingOAuth = true) }
+        _uiState.update { it.copy(step = SignInStep.SigningIn) }
         val token = OAuthCallback.token(uri)
         val state = OAuthCallback.state(uri)
         if (OAuthCallback.error(uri) != null || token == null || state == null) {
@@ -189,7 +196,7 @@ class SignInViewModel @Inject constructor(
     }
 
     private fun failOAuth(error: UiText = UiText(R.string.error_oauth_failed)) =
-        _uiState.update { it.copy(emailError = error, completingOAuth = false) }
+        _uiState.update { it.copy(step = SignInStep.Email, emailError = error) }
 
     fun signInWithOAuth(providerId: String, credentials: CredentialProvider) {
         val flow = ProviderLoginFlow.forProvider(providerId, authRepository)

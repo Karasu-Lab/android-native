@@ -5,7 +5,7 @@ import com.karasu256.karasulab.data.SignInResult
 import com.karasu256.karasulab.ui.UiText
 import com.karasu256.karasulab.ui.component.ProviderMethod
 
-enum class SignInStep { Email, Passkey, Methods, Code }
+enum class SignInStep { Email, Passkey, Methods, Code, SigningIn }
 
 data class SignInUiState(
     val step: SignInStep = SignInStep.Email,
@@ -13,7 +13,6 @@ data class SignInUiState(
     val email: String = "",
     val code: String = "",
     val busy: Boolean = false,
-    val completingOAuth: Boolean = false,
     val busyMethod: ProviderMethod? = null,
     val busyProviderId: String? = null,
     val emailError: UiText? = null,
