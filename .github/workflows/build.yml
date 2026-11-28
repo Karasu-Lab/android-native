@@ -50,17 +50,20 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Compute build version
         id: version
         run: |
           BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
           SHORT_SHA=$(git rev-parse --short HEAD)
+          COMMIT_COUNT=$(git rev-list --count HEAD)
           IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$BASE_VERSION"
           {
             echo "base_version=${BASE_VERSION}"
             echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
-            echo "version_code=$((2000000000 + V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH))"
+            echo "version_code=$((2000000000 + COMMIT_COUNT * 1000 + (V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH) % 1000))"
           } >> "$GITHUB_OUTPUT"
 
   signing:
@@ -118,6 +121,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - name: Determine build variant
         id: variant
         run: |
@@ -224,6 +229,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Determine build variant
         id: variant
@@ -256,10 +263,11 @@ jobs:
         run: |
           BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
           SHORT_SHA=$(git rev-parse --short HEAD)
+          COMMIT_COUNT=$(git rev-list --count HEAD)
           IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$BASE_VERSION"
           {
             echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
-            echo "version_code=$((2000000000 + V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH))"
+            echo "version_code=$((2000000000 + COMMIT_COUNT * 1000 + (V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH) % 1000))"
           } >> "$GITHUB_OUTPUT"
 
       - name: Set up Java
