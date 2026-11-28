@@ -380,7 +380,7 @@ dependencies {
 
 androidComponents {
     beforeVariants(selector().withBuildType("localDebug").withFlavor("distribution" to "nogms")) {
-        it.enabled = false
+        it.enable = false
     }
     onVariants { variant ->
         val capitalized = variant.name.replaceFirstChar { it.uppercase() }
