@@ -35,16 +35,6 @@ jobs:
           } > ./local.properties
           keytool -list -v -keystore ./.keystore -storepass "${STORE_PASS}"
 
-      - name: Compute version
-        id: version
-        run: |
-          BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          {
-            echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
-            echo "version_code=$(date +%s)"
-          } >> "$GITHUB_OUTPUT"
-
       - name: Set up Java
         uses: actions/setup-java@v6
         with:
@@ -63,18 +53,15 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build debug APK
-        env:
-          VERSION_NAME: ${{ steps.version.outputs.version_name }}
-          VERSION_CODE: ${{ steps.version.outputs.version_code }}
         run: |
-          ./gradlew --no-daemon :app:assembleGmsDebug \
-            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE" -Pdebuggable=false
+          ./gradlew --no-daemon :app:assembleStandardGmsDebug \
+            -Pdebuggable=false
 
       - name: Verify APK signature
         run: |
           APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
-          APK=$(ls app/build/outputs/apk/gms/debug/*.apk | head -n1)
-          REPORT=app/build/outputs/apk/gms/debug/apksigner-report.txt
+          APK=$(ls app/build/outputs/apk/standardGms/debug/*.apk | head -n1)
+          REPORT=app/build/outputs/apk/standardGms/debug/apksigner-report.txt
           set +e
           "$APKSIGNER" verify --verbose --print-certs "$APK" > "$REPORT" 2>&1
           STATUS=$?
@@ -92,6 +79,6 @@ jobs:
         with:
           name: android-debug-signed-${{ github.sha }}
           path: |
-            app/build/outputs/apk/gms/debug/*.apk
+            app/build/outputs/apk/standardGms/debug/*.apk
           if-no-files-found: error
           retention-days: 14

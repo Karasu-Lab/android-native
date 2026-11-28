@@ -3,7 +3,7 @@ Karasu Lab Android is the native Android app for Karasu Lab.
 It provides account sign-in, linked accounts, authorized apps, active
 sessions and security settings for Karasu Lab services.
 
-The nogms build distributed through F-Droid does not include Google
+The fdroid build distributed through F-Droid does not include Google
 Mobile Services or Firebase. In that build, Google sign-in uses the
 standard web provider flow instead of the native Google sign-in, and
 Firebase features are disabled.

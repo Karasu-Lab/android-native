@@ -17,7 +17,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.LicenseDetailScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import dev.jeziellago.compose.markdowntext.MarkdownText
+import com.karasu256.karasulab.ui.markdown.MarkdownBody
 
 @Destination<RootGraph>
 @Composable
@@ -85,7 +85,7 @@ fun LicenseDetailScreen(navigator: DestinationsNavigator, libraryKey: String) {
                     )
                 }
             }
-            MarkdownText(
+            MarkdownBody(
                 markdown = library.licenseText,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
             )

@@ -17,23 +17,13 @@ permissions:
   contents: read
 
 jobs:
-  nogms:
-    name: Build nogms APKs without GMS or Firebase
+  fdroid:
+    name: Build fdroid APK without GMS or Firebase
     runs-on: ubuntu-latest
     if: github.event.action != 'edited' || github.event.changes.base != null
     steps:
       - name: Check out source
         uses: actions/checkout@v7
-
-      - name: Compute build version
-        id: version
-        run: |
-          BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          {
-            echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
-            echo "version_code=$(date +%s)"
-          } >> "$GITHUB_OUTPUT"
 
       - name: Set up Java
         uses: actions/setup-java@v6
@@ -52,44 +42,65 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build nogms debug and release APKs
-        env:
-          VERSION_NAME: ${{ steps.version.outputs.version_name }}
-          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+      - name: Remove google-services.json files listed in the F-Droid metadata
         run: |
-          ./gradlew --no-daemon :app:assembleNogmsDebug :app:assembleNogmsRelease \
-            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+          rm -f app/src/gmsDebug/google-services.json
+          rm -f app/src/gmsRelease/google-services.json
+          rm -f app/src/gmsLocalDebug/google-services.json
+          rm -f app/src/standardGmsDebug/google-services.json
+          rm -f app/src/standardGmsRelease/google-services.json
+          rm -f app/src/standardGmsLocalDebug/google-services.json
+          rm -f app/src/fdroidGmsDebug/google-services.json
+          rm -f app/src/fdroidGmsRelease/google-services.json
+          rm -f app/src/fdroidGmsLocalDebug/google-services.json
 
-      - name: Verify the nogms dependency graph has no GMS or Firebase
+      - name: Build fdroid release APK
         run: |
-          ./gradlew --no-daemon --offline :app:dependencies --configuration nogmsReleaseRuntimeClasspath > nogms-dependencies.txt
-          if grep -E "com\.google\.firebase|com\.google\.android\.gms|com\.google\.android\.libraries\.identity|play-services" nogms-dependencies.txt; then
-            echo "::error::The nogms variant depends on GMS or Firebase libraries."
+          ./gradlew --no-daemon :app:assembleFdroidNogmsRelease
+
+      - name: Verify the fdroid dependency graph has no GMS, Firebase or JitPack libraries
+        run: |
+          ./gradlew --no-daemon --offline :app:dependencies --configuration fdroidNogmsReleaseRuntimeClasspath > fdroid-dependencies.txt
+          if grep -E "com\.google\.firebase|com\.google\.android\.gms|com\.google\.android\.libraries\.identity|play-services|com\.github\.jeziellago|compose-markdown" fdroid-dependencies.txt; then
+            echo "::error::The fdroid variant depends on GMS, Firebase or JitPack libraries."
             exit 1
           fi
 
       - name: Verify the generated license catalog is included
         run: |
-          CATALOG=app/build/generated/licenses/nogmsRelease/com/karasu256/karasulab/data/GeneratedLicenseCatalog.kt
+          CATALOG=app/build/generated/licenses/fdroidNogmsRelease/com/karasu256/karasulab/data/GeneratedLicenseCatalog.kt
           test -s "$CATALOG"
           grep -q "Karasu Lab Android" "$CATALOG"
           grep -q "MIT License" "$CATALOG"
 
+      - name: Verify the APK package name and version
+        run: |
+          BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$BASE_VERSION"
+          VERSION_CODE=$((V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH))
+          VERSION_NAME="${BASE_VERSION}-fdroidNogmsRelease-${SHORT_SHA}+${VERSION_CODE}"
+          AAPT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/aapt"
+          APK=$(ls app/build/outputs/apk/fdroidNogms/release/*.apk | head -n1)
+          BADGING=$("$AAPT" dump badging "$APK")
+          grep -q "package: name='com.karasu256.karasulab.fdroid'" <<< "$BADGING"
+          grep -q "versionCode='${VERSION_CODE}'" <<< "$BADGING"
+          grep -q "versionName='${VERSION_NAME}'" <<< "$BADGING"
+
       - name: Verify APK signatures
         run: |
           APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
-          for APK in app/build/outputs/apk/nogms/debug/*.apk app/build/outputs/apk/nogms/release/*.apk; do
+          for APK in app/build/outputs/apk/fdroidNogms/release/*.apk; do
             set +e
             "$APKSIGNER" verify --print-certs -v "$APK"
             set -e
           done >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload nogms APKs
+      - name: Upload fdroid APK
         uses: actions/upload-artifact@v7
         with:
-          name: android-nogms-${{ github.sha }}
+          name: android-fdroid-${{ github.sha }}
           path: |
-            app/build/outputs/apk/nogms/debug/*.apk
-            app/build/outputs/apk/nogms/release/*.apk
+            app/build/outputs/apk/fdroidNogms/release/*.apk
           if-no-files-found: error
           retention-days: 14
