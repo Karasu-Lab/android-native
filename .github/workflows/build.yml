@@ -211,6 +211,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/preview" ]; then
             echo "tasks=:app:assembleDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dir=app/build/outputs/apk/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
               echo "app/build/outputs/apk/debug/*.apk"
@@ -218,6 +219,7 @@ jobs:
             } >> "$GITHUB_OUTPUT"
           else
             echo "tasks=:app:assembleRelease :app:bundleRelease" >> "$GITHUB_OUTPUT"
+            echo "apk_dir=app/build/outputs/apk/release" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
               echo "app/build/outputs/apk/release/*.apk"
@@ -269,6 +271,21 @@ jobs:
         run: |
           ./gradlew --no-daemon ${{ steps.variant.outputs.tasks }} \
             -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+
+      - name: Verify APK signature
+        run: |
+          APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
+          APK=$(ls ${{ steps.variant.outputs.apk_dir }}/*.apk | head -n1)
+          REPORT=${{ steps.variant.outputs.apk_dir }}/apksigner-report.txt
+          set +e
+          "$APKSIGNER" verify --print-certs -v "$APK" > "$REPORT" 2>&1
+          set -e
+          {
+            echo "## APK signature verification"
+            echo '```'
+            cat "$REPORT"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload unsigned APK and AAB
         uses: actions/upload-artifact@v7
