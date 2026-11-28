@@ -80,7 +80,7 @@ jobs:
       - name: Verify APK signatures
         run: |
           APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
-          for APK in app/build/outputs/apk/nogmsDebug/*.apk app/build/outputs/apk/nogmsRelease/*.apk; do
+          for APK in app/build/outputs/apk/nogms/debug/*.apk app/build/outputs/apk/nogms/release/*.apk; do
             set +e
             "$APKSIGNER" verify --print-certs -v "$APK"
             set -e
@@ -91,7 +91,7 @@ jobs:
         with:
           name: android-nogms-${{ github.sha }}
           path: |
-            app/build/outputs/apk/nogmsDebug/*.apk
-            app/build/outputs/apk/nogmsRelease/*.apk
+            app/build/outputs/apk/nogms/debug/*.apk
+            app/build/outputs/apk/nogms/release/*.apk
           if-no-files-found: error
           retention-days: 14

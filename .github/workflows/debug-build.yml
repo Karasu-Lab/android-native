@@ -82,8 +82,8 @@ jobs:
       - name: Verify APK signature
         run: |
           APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
-          APK=$(ls app/build/outputs/apk/gmsDebug/*.apk | head -n1)
-          REPORT=app/build/outputs/apk/gmsDebug/apksigner-report.txt
+          APK=$(ls app/build/outputs/apk/gms/debug/*.apk | head -n1)
+          REPORT=app/build/outputs/apk/gms/debug/apksigner-report.txt
           set +e
           "$APKSIGNER" verify --verbose --print-certs "$APK" > "$REPORT" 2>&1
           STATUS=$?
@@ -101,6 +101,6 @@ jobs:
         with:
           name: android-debug-signed-${{ github.sha }}
           path: |
-            app/build/outputs/apk/gmsDebug/*.apk
+            app/build/outputs/apk/gms/debug/*.apk
           if-no-files-found: error
           retention-days: 14
