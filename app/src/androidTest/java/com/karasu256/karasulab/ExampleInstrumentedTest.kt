@@ -13,6 +13,6 @@ class ExampleInstrumentedTest {
     @Test
     fun useAppContext() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.karasu256.karasulab", appContext.packageName)
+        assertEquals(BuildConfig.APPLICATION_ID, appContext.packageName)
     }
 }

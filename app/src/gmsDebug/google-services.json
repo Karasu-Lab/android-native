@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:521494519407:android:f5bc42426d9df26503379a",
         "android_client_info": {
-          "package_name": "com.karasu256.karasulab"
+          "package_name": "com.karasu256.karasulab.debug"
         }
       },
       "oauth_client": [
