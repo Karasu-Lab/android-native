@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/Karasu-Lab/android-native/compare/v1.9.1...v1.10.0) (2026-11-28)
+
+
+### Features
+
+* add developer options unlocked by tapping the client version ([386a2d1](https://github.com/Karasu-Lab/android-native/commit/386a2d19ad979a5598176695c02488900bc90969))
+
 ## [1.9.1](https://github.com/Karasu-Lab/android-native/compare/v1.9.0...v1.9.1) (2026-11-28)
 
 
