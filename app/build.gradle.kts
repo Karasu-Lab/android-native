@@ -31,6 +31,9 @@ abstract class GenerateLicensesTask : DefaultTask() {
     @get:Input
     abstract val appVersion: Property<String>
 
+    @get:Input
+    abstract val fetchLicenseTexts: Property<Boolean>
+
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
 
@@ -134,7 +137,7 @@ SOFTWARE.
 
     private fun licenseTextFor(licenseName: String, licenseUrl: String): String {
         val id = spdxId(licenseName, licenseUrl)
-        if (id != null) {
+        if (id != null && fetchLicenseTexts.get()) {
             val fetched = licenseTextCache.getOrPut(id) {
                 runCatching { URL("https://spdx.org/licenses/$id.txt").readText() }.getOrNull()
             }
@@ -211,8 +214,21 @@ val releasePleaseVersion = if (releasePleaseManifest.exists()) {
 
 val isCiBuild = providers.environmentVariable("CI").orNull == "true"
 
-val appVersionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
-val appVersionName = project.findProperty("versionName")?.toString() ?: releasePleaseVersion ?: "1.0"
+val releasePleaseVersionParts = (releasePleaseVersion ?: "1.0.0").split(".").map { it.toIntOrNull() ?: 0 }
+val derivedVersionCode = if (releasePleaseVersionParts.size >= 3) {
+    2_000_000_000 + releasePleaseVersionParts[0] * 10000 + releasePleaseVersionParts[1] * 100 + releasePleaseVersionParts[2]
+} else {
+    2_000_000_001
+}
+val appVersionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: derivedVersionCode
+val baseVersionName = releasePleaseVersion ?: "1.0.0"
+val shortCommit = runCatching {
+    providers.exec {
+        commandLine("git", "rev-parse", "--short", "HEAD")
+        workingDir = rootProject.projectDir
+    }.standardOutput.asText.get().trim()
+}.getOrNull()?.ifBlank { null } ?: "unknown"
+val appVersionName = "$baseVersionName-$shortCommit+$appVersionCode"
 
 android {
     namespace = "com.karasu256.karasulab"
@@ -242,16 +258,26 @@ android {
         )
     }
 
-    flavorDimensions += "distribution"
+    flavorDimensions += listOf("channel", "distribution")
 
     productFlavors {
+        create("standard") {
+            dimension = "channel"
+            isDefault = true
+            buildConfigField("boolean", "FDROID_BUILD", "false")
+        }
+        create("fdroid") {
+            dimension = "channel"
+            applicationId = "com.karasu256.karasulab.fdroid"
+            buildConfigField("boolean", "FDROID_BUILD", "true")
+        }
         create("gms") {
             dimension = "distribution"
-            isDefault = true
             buildConfigField("boolean", "GMS_AVAILABLE", "true")
         }
         create("nogms") {
             dimension = "distribution"
+            isDefault = true
             buildConfigField("boolean", "GMS_AVAILABLE", "false")
         }
     }
@@ -386,7 +412,7 @@ dependencies {
     "gmsImplementation"(libs.firebase.crashlytics)
     "gmsImplementation"(libs.firebase.analytics)
     implementation(libs.multiplatform.settings)
-    implementation(libs.compose.markdown)
+    "standardImplementation"(libs.compose.markdown)
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -400,10 +426,12 @@ androidComponents {
     beforeVariants(selector().withBuildType("localDebug")) {
         it.enable = !isCiBuild
     }
-    beforeVariants(selector().withBuildType("localDebug").withFlavor("distribution" to "nogms")) {
-        it.enable = false
-    }
     onVariants { variant ->
+        val isFdroid = variant.name.startsWith("fdroid")
+        variant.outputs.forEach { output ->
+            output.versionCode.set(appVersionCode)
+            output.versionName.set("$baseVersionName-${variant.name}-$shortCommit+$appVersionCode")
+        }
         val capitalized = variant.name.replaceFirstChar { it.uppercase() }
         val licensesTask = tasks.register<GenerateLicensesTask>("generate${capitalized}Licenses") {
             outputs.upToDateWhen { false }
@@ -414,6 +442,7 @@ androidComponents {
             )
             gradleUserHome.set(gradle.gradleUserHomeDir.absolutePath)
             appVersion.set(appVersionName)
+            fetchLicenseTexts.set(!isFdroid)
             outputDirectory.set(layout.buildDirectory.dir("generated/licenses/${variant.name}"))
         }
         variant.sources.java?.addGeneratedSourceDirectory(licensesTask, GenerateLicensesTask::outputDirectory)

@@ -31,10 +31,11 @@ jobs:
         run: |
           BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
           SHORT_SHA=$(git rev-parse --short HEAD)
+          IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$BASE_VERSION"
           {
             echo "base_version=${BASE_VERSION}"
             echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
-            echo "version_code=$(date +%s)"
+            echo "version_code=$((2000000000 + V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH))"
           } >> "$GITHUB_OUTPUT"
 
   playstore-signing:
@@ -81,13 +82,13 @@ jobs:
         id: variant
         run: |
           if [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "tasks=:app:assembleGmsDebug :app:bundleGmsDebug" >> "$GITHUB_OUTPUT"
-            echo "apk_dir=app/build/outputs/apk/gms/debug" >> "$GITHUB_OUTPUT"
-            echo "bundle_path=app/build/outputs/bundle/gmsDebug/app-gms-debug.aab" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleStandardGmsDebug :app:bundleStandardGmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dir=app/build/outputs/apk/standardGms/debug" >> "$GITHUB_OUTPUT"
+            echo "bundle_path=app/build/outputs/bundle/standardGmsDebug/app-standard-gms-debug.aab" >> "$GITHUB_OUTPUT"
           else
-            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease" >> "$GITHUB_OUTPUT"
-            echo "apk_dir=app/build/outputs/apk/gms/release" >> "$GITHUB_OUTPUT"
-            echo "bundle_path=app/build/outputs/bundle/gmsRelease/app-gms-release.aab" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleStandardGmsRelease :app:bundleStandardGmsRelease" >> "$GITHUB_OUTPUT"
+            echo "apk_dir=app/build/outputs/apk/standardGms/release" >> "$GITHUB_OUTPUT"
+            echo "bundle_path=app/build/outputs/bundle/standardGmsRelease/app-standard-gms-release.aab" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Prepare Play Store signing key
@@ -133,12 +134,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build with the Play Store signing key
-        env:
-          VERSION_NAME: ${{ needs.version.outputs.version_name }}
-          VERSION_CODE: ${{ needs.version.outputs.version_code }}
         run: |
           ./gradlew --no-daemon ${{ steps.variant.outputs.tasks }} \
-            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE" -Pdebuggable=false
+            -Pdebuggable=false
 
       - name: Verify APK signature and report
         run: |

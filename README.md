@@ -21,47 +21,68 @@ release builds are unsigned.
 
 ## Build
 
-The app has two distribution flavors. The `gms` flavor includes Google
-Mobile Services and Firebase and uses the native Google sign-in. The
-`nogms` flavor has no GMS or Firebase dependency, disables Firebase
-features, and uses the standard web provider flow for Google sign-in.
-Both flavors provide debug and release build types.
-The application ID is `com.karasu256.karasulab`, except for the
-`localDebug` build type, which uses `com.karasu256.karasulab.debug`.
-The `localDebug` build type inherits the debug configuration and is
-only available with the gms flavor, as the `gmsLocalDebug` variant.
+The app has two flavor dimensions. The `channel` dimension is
+`standard` or `fdroid`, and the `distribution` dimension is `gms` or
+`nogms`. The `gms` flavor includes Google Mobile Services and Firebase
+and uses the native Google sign-in. The `nogms` flavor has no GMS or
+Firebase dependency, disables Firebase features, and uses the standard
+web provider flow for Google sign-in. Every flavor combination provides
+debug, localDebug and release build types. The standard build is the
+release build type with no local build type and the `nogms`
+distribution.
+The application ID is `com.karasu256.karasulab` for the `standard`
+channel and `com.karasu256.karasulab.fdroid` for the `fdroid` channel,
+except for the `localDebug` build type, which adds the `.debug` suffix.
+The `localDebug` build type inherits the debug configuration.
 Its google-services configuration is placed in
 `app/src/gmsLocalDebug/google-services.json`. The debug and release
-build types use the base application ID.
+build types use the channel application ID.
 Which debug variant is available depends on the environment: the
-debug variants are enabled in CI only, and the `gmsLocalDebug`
-variant is enabled in local builds only, so a local build uses
-`gmsLocalDebug` and a CI build uses `gmsDebug`.
+debug variants are enabled in CI only, and the `localDebug` variants
+are enabled in local builds only, so a local build uses a
+`localDebug` variant and a CI build uses a `debug` variant.
 
-Build and test the gms debug variant with Gradle in CI:
+The version is derived from the Release Please manifest
+(`.release-please-manifest.json`). The version code is
+`2000000000 + major * 10000 + minor * 100 + patch`. The offset keeps
+every version code above the timestamp-based version codes that were
+published to Google Play before this scheme was introduced, while
+staying below the maximum version code of 2100000000. Every variant
+is named `<version>-<variant>-<short commit>+<version code>`, for
+example `1.15.0-fdroidNogmsRelease-0123abc+2000011500`.
+
+Build and test the standard gms debug variant with Gradle in CI:
 
 ```sh
-./gradlew :app:assembleGmsDebug
-./gradlew :app:testGmsDebugUnitTest
+./gradlew :app:assembleStandardGmsDebug
+./gradlew :app:testStandardGmsDebugUnitTest
 ```
 
 To build the local debug variant with its own application ID:
 
 ```sh
-./gradlew :app:assembleGmsLocalDebug
+./gradlew :app:assembleStandardGmsLocalDebug
 ```
 
-To build a gms release APK and Android App Bundle:
+To build a standard gms release APK and Android App Bundle:
 
 ```sh
-./gradlew :app:assembleGmsRelease :app:bundleGmsRelease
+./gradlew :app:assembleStandardGmsRelease :app:bundleStandardGmsRelease
 ```
 
-To build the F-Droid variant without GMS or Firebase:
+To build the F-Droid variant, which is the fdroid channel, the nogms
+distribution and the release build type:
 
 ```sh
-./gradlew :app:assembleNogmsDebug :app:assembleNogmsRelease
+./gradlew :app:assembleFdroidNogmsRelease
 ```
+
+The fdroid variant does not include the JitPack dependency used for
+Markdown rendering. Its license body is shown as plain text through
+the Markdown renderer interface, and its license catalog is generated
+without fetching license texts from the network. The F-Droid workflow
+builds this variant with the same procedure as the build recipe in
+`metadata/com.karasu256.karasulab.fdroid.yml`.
 
 The license catalog shown in the app is generated at build time from the
 resolved dependencies of each variant and is included in the APK as

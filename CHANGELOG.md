@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.16.0](https://github.com/Karasu-Lab/android-native/compare/v1.15.0...v1.16.0) (2026-11-28)
+
+
+### Features
+
+* add the fdroid variant ([99422d3](https://github.com/Karasu-Lab/android-native/commit/99422d33eaac14e854ecd7691d5762fe504becd9))
+* apply Roboto across the app when GMS is available ([bbe0a6e](https://github.com/Karasu-Lab/android-native/commit/bbe0a6e6f976a6b9cbea627e353fea7954c6326f))
+
+
+### Bug Fixes
+
+* install the preview SDK in the F-Droid metadata build ([7dd01c4](https://github.com/Karasu-Lab/android-native/commit/7dd01c4b5430c68afb514d9877d892c90d24bf42))
+* run the signed build on pull request edits ([06717d4](https://github.com/Karasu-Lab/android-native/commit/06717d434133ba2a49557c190ac473ed97fc29a6))
+
 ## [1.15.0](https://github.com/Karasu-Lab/android-native/compare/v1.14.1...v1.15.0) (2026-11-28)
 
 
