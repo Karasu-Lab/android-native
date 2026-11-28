@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.3](https://github.com/Karasu-Lab/android-native/compare/v1.12.2...v1.12.3) (2026-11-28)
+
+
+### Bug Fixes
+
+* restore the license detail screen and render the text with compose-markdown ([5da14a7](https://github.com/Karasu-Lab/android-native/commit/5da14a7155a1a87e75ee432c02468ca951e3fd45))
+
 ## [1.12.2](https://github.com/Karasu-Lab/android-native/compare/v1.12.1...v1.12.2) (2026-11-28)
 
 
