@@ -87,13 +87,13 @@ jobs:
         id: variant
         run: |
           if [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "tasks=:app:assembleStandardGmsDebug :app:bundleStandardGmsDebug" >> "$GITHUB_OUTPUT"
-            echo "apk_dir=app/build/outputs/apk/standardGms/debug" >> "$GITHUB_OUTPUT"
-            echo "bundle_path=app/build/outputs/bundle/standardGmsDebug/app-standard-gms-debug.aab" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsDebug :app:bundleGmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dir=app/build/outputs/apk/gms/debug" >> "$GITHUB_OUTPUT"
+            echo "bundle_path=app/build/outputs/bundle/gmsDebug/app-gms-debug.aab" >> "$GITHUB_OUTPUT"
           else
-            echo "tasks=:app:assembleStandardGmsRelease :app:bundleStandardGmsRelease" >> "$GITHUB_OUTPUT"
-            echo "apk_dir=app/build/outputs/apk/standardGms/release" >> "$GITHUB_OUTPUT"
-            echo "bundle_path=app/build/outputs/bundle/standardGmsRelease/app-standard-gms-release.aab" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease" >> "$GITHUB_OUTPUT"
+            echo "apk_dir=app/build/outputs/apk/gms/release" >> "$GITHUB_OUTPUT"
+            echo "bundle_path=app/build/outputs/bundle/gmsRelease/app-gms-release.aab" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Prepare Play Store signing key

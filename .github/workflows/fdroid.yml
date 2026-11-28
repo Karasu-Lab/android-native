@@ -49,20 +49,17 @@ jobs:
           rm -f app/src/gmsDebug/google-services.json
           rm -f app/src/gmsRelease/google-services.json
           rm -f app/src/gmsLocalDebug/google-services.json
-          rm -f app/src/standardGmsDebug/google-services.json
-          rm -f app/src/standardGmsRelease/google-services.json
-          rm -f app/src/standardGmsLocalDebug/google-services.json
-          rm -f app/src/fdroidGmsDebug/google-services.json
-          rm -f app/src/fdroidGmsRelease/google-services.json
-          rm -f app/src/fdroidGmsLocalDebug/google-services.json
+          rm -f app/src/fdroidDebug/google-services.json
+          rm -f app/src/fdroidRelease/google-services.json
+          rm -f app/src/fdroidLocalDebug/google-services.json
 
       - name: Build fdroid release APK
         run: |
-          ./gradlew --no-daemon :app:assembleFdroidNogmsRelease
+          ./gradlew --no-daemon :app:assembleFdroidRelease
 
       - name: Verify the fdroid dependency graph has no GMS, Firebase or JitPack libraries
         run: |
-          ./gradlew --no-daemon --offline :app:dependencies --configuration fdroidNogmsReleaseRuntimeClasspath > fdroid-dependencies.txt
+          ./gradlew --no-daemon --offline :app:dependencies --configuration fdroidReleaseRuntimeClasspath > fdroid-dependencies.txt
           if grep -E "com\.google\.firebase|com\.google\.android\.gms|com\.google\.android\.libraries\.identity|play-services|com\.github\.jeziellago|compose-markdown" fdroid-dependencies.txt; then
             echo "::error::The fdroid variant depends on GMS, Firebase or JitPack libraries."
             exit 1
@@ -70,7 +67,7 @@ jobs:
 
       - name: Verify the generated license catalog is included
         run: |
-          CATALOG=app/build/generated/licenses/fdroidNogmsRelease/com/karasu256/karasulab/data/GeneratedLicenseCatalog.kt
+          CATALOG=app/build/generated/licenses/fdroidRelease/com/karasu256/karasulab/data/GeneratedLicenseCatalog.kt
           test -s "$CATALOG"
           grep -q "Karasu Lab Android" "$CATALOG"
           grep -q "MIT License" "$CATALOG"
@@ -82,9 +79,9 @@ jobs:
           COMMIT_COUNT=$(git rev-list --count HEAD)
           IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$BASE_VERSION"
           VERSION_CODE=$((2000000000 + COMMIT_COUNT * 1000 + (V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH) % 1000))
-          VERSION_NAME="${BASE_VERSION}-fdroidNogmsRelease-${SHORT_SHA}+${VERSION_CODE}"
+          VERSION_NAME="${BASE_VERSION}-fdroidRelease-${SHORT_SHA}+${VERSION_CODE}"
           AAPT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/aapt"
-          APK=$(ls app/build/outputs/apk/fdroidNogms/release/*.apk | head -n1)
+          APK=$(ls app/build/outputs/apk/fdroid/release/*.apk | head -n1)
           BADGING=$("$AAPT" dump badging "$APK")
           grep -q "package: name='com.karasu256.karasulab.fdroid'" <<< "$BADGING"
           grep -q "versionCode='${VERSION_CODE}'" <<< "$BADGING"
@@ -93,7 +90,7 @@ jobs:
       - name: Verify APK signatures
         run: |
           APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
-          for APK in app/build/outputs/apk/fdroidNogms/release/*.apk; do
+          for APK in app/build/outputs/apk/fdroid/release/*.apk; do
             set +e
             "$APKSIGNER" verify --print-certs -v "$APK"
             set -e
@@ -104,6 +101,6 @@ jobs:
         with:
           name: android-fdroid-${{ github.sha }}
           path: |
-            app/build/outputs/apk/fdroidNogms/release/*.apk
+            app/build/outputs/apk/fdroid/release/*.apk
           if-no-files-found: error
           retention-days: 14
