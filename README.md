@@ -33,8 +33,12 @@ only available with the gms flavor, as the `gmsLocalDebug` variant.
 Its google-services configuration is placed in
 `app/src/gmsLocalDebug/google-services.json`. The debug and release
 build types use the base application ID.
+Which debug variant is available depends on the environment: the
+debug variants are enabled in CI only, and the `gmsLocalDebug`
+variant is enabled in local builds only, so a local build uses
+`gmsLocalDebug` and a CI build uses `gmsDebug`.
 
-Build and test the gms debug variant with Gradle:
+Build and test the gms debug variant with Gradle in CI:
 
 ```sh
 ./gradlew :app:assembleGmsDebug

@@ -203,6 +203,8 @@ val releasePleaseVersion = if (releasePleaseManifest.exists()) {
     null
 }
 
+val isCiBuild = providers.environmentVariable("CI").orNull == "true"
+
 val appVersionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
 val appVersionName = project.findProperty("versionName")?.toString() ?: releasePleaseVersion ?: "1.0"
 
@@ -386,6 +388,12 @@ dependencies {
 }
 
 androidComponents {
+    beforeVariants(selector().withBuildType("debug")) {
+        it.enable = isCiBuild
+    }
+    beforeVariants(selector().withBuildType("localDebug")) {
+        it.enable = !isCiBuild
+    }
     beforeVariants(selector().withBuildType("localDebug").withFlavor("distribution" to "nogms")) {
         it.enable = false
     }
