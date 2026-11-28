@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.3](https://github.com/Karasu-Lab/android-native/compare/v1.16.2...v1.16.3) (2026-11-28)
+
+
+### Bug Fixes
+
+* drop the redundant standard label from the version name ([bbaa10f](https://github.com/Karasu-Lab/android-native/commit/bbaa10f2cd9a379f913da20bacacd4aaf4bf0076))
+
 ## [1.16.2](https://github.com/Karasu-Lab/android-native/compare/v1.16.1...v1.16.2) (2026-11-28)
 
 
