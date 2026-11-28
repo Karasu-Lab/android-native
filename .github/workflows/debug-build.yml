@@ -18,26 +18,22 @@ jobs:
 
       - name: Prepare signing key
         env:
-          PLAYSTORE_SIGNING_ALIAS: ${{ vars.PLAYSTORE_SIGNING_ALIAS }}
-          PLAYSTORE_SIGNING_PASS: ${{ secrets.PLAYSTORE_SIGNING_PASS }}
+          SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_ALIAS: ${{ vars.SIGNING_ALIAS }}
         run: |
           tr -d ' \n\r' <<< '${{ secrets.SIGNING_KEY_BASE64 || secrets.SIGNING_KEY }}' | base64 -d > ./.keystore
-          STORE_PASS=$(tr -d '\n\r' <<< "$PLAYSTORE_SIGNING_PASS")
-          KEY_ALIAS=$(tr -d '\n\r' <<< "$PLAYSTORE_SIGNING_ALIAS")
-          if ! keytool -list -keystore ./.keystore -storepass "${STORE_PASS}" > /dev/null 2>&1; then
-            echo "::error::The signing key could not be opened with the repository secret PLAYSTORE_SIGNING_PASS."
-            exit 1
-          fi
-          if ! keytool -list -keystore ./.keystore -storepass "${STORE_PASS}" -alias "${KEY_ALIAS}" > /dev/null 2>&1; then
-            echo "::error::The alias '${KEY_ALIAS}' from the repository variable PLAYSTORE_SIGNING_ALIAS was not found in the signing key."
-            exit 1
-          fi
+          STORE_PASS=$(tr -d '\n\r' <<< "${SIGNING_STORE_PASSWORD:-$SIGNING_PASS}")
+          KEY_PASS=$(tr -d '\n\r' <<< "${SIGNING_KEY_PASSWORD:-$STORE_PASS}")
+          DETECTED_ALIAS=$(keytool -list -keystore ./.keystore -storepass "${STORE_PASS}" 2>/dev/null | grep "Alias name:" | head -n1 | sed 's/.*Alias name: *//' | tr -d ' \r')
+          KEY_ALIAS=$(tr -d '\n\r' <<< "${SIGNING_ALIAS:-${DETECTED_ALIAS:-release}}")
           {
             echo "signing.storePassword=${STORE_PASS}"
-            echo "signing.keyPassword=${STORE_PASS}"
+            echo "signing.keyPassword=${KEY_PASS}"
             echo "signing.Alias=${KEY_ALIAS}"
           } > ./local.properties
-          keytool -list -v -keystore ./.keystore -storepass "${STORE_PASS}" -alias "${KEY_ALIAS}"
+          keytool -list -v -keystore ./.keystore -storepass "${STORE_PASS}"
 
       - name: Compute version
         id: version
