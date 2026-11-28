@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.1](https://github.com/Karasu-Lab/android-native/compare/v1.16.0...v1.16.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* resolve the variant artifacts before generating the license catalog ([ed81121](https://github.com/Karasu-Lab/android-native/commit/ed811213ec8cc339ec614b0e01038a53d2bd5481))
+
 ## [1.16.0](https://github.com/Karasu-Lab/android-native/compare/v1.15.0...v1.16.0) (2026-11-28)
 
 
