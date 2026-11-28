@@ -13,7 +13,7 @@ Native Android app for Karasu Lab.
 | `SIGNING_KEY_BASE64` | No | Base64-encoded release keystore for GitHub Actions. The workflow decodes it and writes it to `.keystore`. |
 | `SIGNING_STORE_PASSWORD` | No | Release keystore store password. |
 | `SIGNING_KEY_PASSWORD` | No | Release key password. |
-| `ALIAS` | No | Release key alias. |
+| `SIGNING_ALIAS` | No | Release key alias. In GitHub Actions, set it as a public variable in each environment. |
 | `SIGNING_PASS` | No | Release keystore and key password. Set with `SIGNING_KEY`; in GitHub Actions, configure it as an environment secret. |
 
 Without signing material, debug builds use the standard Android debug key and
@@ -58,8 +58,9 @@ and `signing.releaseKeyPassword` properties in the untracked `local.properties`
 file.
 
 For signed GitHub Actions builds, configure `SIGNING_KEY_BASE64` (the base64-encoded
-release keystore), `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_PASSWORD`, and `ALIAS`
-as environment secrets in both `preview` and `production`. Same-repository pull requests use `preview`; pushes to the
+release keystore), `SIGNING_STORE_PASSWORD`, and `SIGNING_KEY_PASSWORD`
+as environment secrets in both `preview` and `production`, and `SIGNING_ALIAS`
+as a public environment variable in both environments. Same-repository pull requests use `preview`; pushes to the
 default branch use `production`. The workflow decodes `SIGNING_KEY_BASE64` and places
 it at the project root as `.keystore`. When neither secret is configured, the
 signed job is skipped; a partially configured set
