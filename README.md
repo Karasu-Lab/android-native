@@ -21,18 +21,34 @@ release builds are unsigned.
 
 ## Build
 
-Build and test the debug variant with Gradle:
+The app has two distribution flavors. The `gms` flavor includes Google
+Mobile Services and Firebase and uses the native Google sign-in. The
+`nogms` flavor has no GMS or Firebase dependency, disables Firebase
+features, and uses the standard web provider flow for Google sign-in.
+Both flavors provide debug and release build types.
+
+Build and test the gms debug variant with Gradle:
 
 ```sh
-./gradlew :app:assembleDebug
-./gradlew :app:testDebugUnitTest
+./gradlew :app:assembleGmsDebug
+./gradlew :app:testGmsDebugUnitTest
 ```
 
-To build a release APK and Android App Bundle:
+To build a gms release APK and Android App Bundle:
 
 ```sh
-./gradlew :app:assembleRelease :app:bundleRelease
+./gradlew :app:assembleGmsRelease :app:bundleGmsRelease
 ```
+
+To build the F-Droid variant without GMS or Firebase:
+
+```sh
+./gradlew :app:assembleNogmsDebug :app:assembleNogmsRelease
+```
+
+The license catalog shown in the app is generated at build time from the
+resolved dependencies of each variant and is included in the APK as
+generated source.
 
 ## Commit messages
 

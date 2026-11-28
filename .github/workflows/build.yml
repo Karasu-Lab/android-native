@@ -104,21 +104,21 @@ jobs:
         id: variant
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "tasks=:app:assembleDebug :app:bundleDebug" >> "$GITHUB_OUTPUT"
-            echo "apk_dir=app/build/outputs/apk/debug" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsDebug :app:bundleGmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dir=app/build/outputs/apk/gmsDebug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
-              echo "app/build/outputs/apk/debug/*.apk"
-              echo "app/build/outputs/bundle/debug/*.aab"
+              echo "app/build/outputs/apk/gmsDebug/*.apk"
+              echo "app/build/outputs/bundle/gmsDebug/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           else
-            echo "tasks=:app:assembleRelease :app:bundleRelease" >> "$GITHUB_OUTPUT"
-            echo "apk_dir=app/build/outputs/apk/release" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease" >> "$GITHUB_OUTPUT"
+            echo "apk_dir=app/build/outputs/apk/gmsRelease" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
-              echo "app/build/outputs/apk/release/*.apk"
-              echo "app/build/outputs/bundle/release/*.aab"
+              echo "app/build/outputs/apk/gmsRelease/*.apk"
+              echo "app/build/outputs/bundle/gmsRelease/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           fi
@@ -210,20 +210,20 @@ jobs:
         id: variant
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "tasks=:app:assembleDebug" >> "$GITHUB_OUTPUT"
-            echo "apk_dir=app/build/outputs/apk/debug" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dir=app/build/outputs/apk/gmsDebug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
-              echo "app/build/outputs/apk/debug/*.apk"
+              echo "app/build/outputs/apk/gmsDebug/*.apk"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           else
-            echo "tasks=:app:assembleRelease :app:bundleRelease" >> "$GITHUB_OUTPUT"
-            echo "apk_dir=app/build/outputs/apk/release" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease" >> "$GITHUB_OUTPUT"
+            echo "apk_dir=app/build/outputs/apk/gmsRelease" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
-              echo "app/build/outputs/apk/release/*.apk"
-              echo "app/build/outputs/bundle/release/*.aab"
+              echo "app/build/outputs/apk/gmsRelease/*.apk"
+              echo "app/build/outputs/bundle/gmsRelease/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           fi
@@ -344,9 +344,9 @@ jobs:
         id: bundle
         run: |
           if [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "path=app/build/outputs/bundle/debug/*.aab" >> "$GITHUB_OUTPUT"
+            echo "path=app/build/outputs/bundle/gmsDebug/*.aab" >> "$GITHUB_OUTPUT"
           else
-            echo "path=app/build/outputs/bundle/release/*.aab" >> "$GITHUB_OUTPUT"
+            echo "path=app/build/outputs/bundle/gmsRelease/*.aab" >> "$GITHUB_OUTPUT"
           fi
       - name: Download signed release bundle
         uses: actions/download-artifact@v4

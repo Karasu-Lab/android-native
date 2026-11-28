@@ -1,0 +1,26 @@
+Categories:
+  - Internet
+License: MIT
+WebSite: https://karasu256.com
+SourceCode: https://github.com/Karasu-Lab/android-native
+IssueTracker: https://github.com/Karasu-Lab/android-native/issues
+
+AutoName: Karasu Lab
+
+RepoType: git
+Repo: https://github.com/Karasu-Lab/android-native.git
+
+Builds:
+  - versionName: 1.10.5
+    versionCode: 1
+    commit: v1.10.5
+    subdir: app
+    gradle:
+      - nogms
+    rm:
+      - app/google-services.json
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 1.10.5
+CurrentVersionCode: 1

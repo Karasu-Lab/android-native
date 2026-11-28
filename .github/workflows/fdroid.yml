@@ -1,0 +1,97 @@
+name: F-Droid Build
+
+on:
+  push:
+    branches:
+      - main
+      - preview
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  nogms:
+    name: Build nogms APKs without GMS or Firebase
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Remove google-services.json
+        run: rm -f app/google-services.json
+
+      - name: Compute build version
+        id: version
+        run: |
+          BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          {
+            echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
+            echo "version_code=$(date +%s)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+
+      - name: Install Android 17 preview SDK
+        run: sdkmanager --channel=3 --install "platforms;android-37.1" "build-tools;37.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build nogms debug and release APKs
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        run: |
+          ./gradlew --no-daemon :app:assembleNogmsDebug :app:assembleNogmsRelease \
+            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+
+      - name: Verify the nogms dependency graph has no GMS or Firebase
+        run: |
+          ./gradlew --no-daemon :app:dependencies --configuration nogmsReleaseRuntimeClasspath > nogms-dependencies.txt
+          if grep -E "com\.google\.firebase|com\.google\.android\.gms|com\.google\.android\.libraries\.identity|play-services" nogms-dependencies.txt; then
+            echo "::error::The nogms variant depends on GMS or Firebase libraries."
+            exit 1
+          fi
+
+      - name: Verify the generated license catalog is included
+        run: |
+          CATALOG=app/build/generated/licenses/nogmsRelease/com/karasu256/karasulab/data/GeneratedLicenseCatalog.kt
+          test -s "$CATALOG"
+          grep -q "Karasu Lab Android" "$CATALOG"
+          grep -q "MIT License" "$CATALOG"
+
+      - name: Verify APK signatures
+        run: |
+          APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
+          for APK in app/build/outputs/apk/nogmsDebug/*.apk app/build/outputs/apk/nogmsRelease/*.apk; do
+            set +e
+            "$APKSIGNER" verify --print-certs -v "$APK"
+            set -e
+          done >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload nogms APKs
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-nogms-${{ github.sha }}
+          path: |
+            app/build/outputs/apk/nogmsDebug/*.apk
+            app/build/outputs/apk/nogmsRelease/*.apk
+          if-no-files-found: error
+          retention-days: 14
