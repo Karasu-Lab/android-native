@@ -1,5 +1,6 @@
 package com.karasu256.karasulab.ui.settings
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
@@ -16,9 +18,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -36,6 +40,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ActiveSessionsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.AuthorizedAppsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.DebugScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.LinkedAccountsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ProfileScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SecurityScreenDestination
@@ -50,6 +55,14 @@ fun SettingsScreen(
 ) {
     val account by viewModel.activeAccount.collectAsStateWithLifecycle()
     val loading by viewModel.loading.collectAsStateWithLifecycle()
+    val developerOptionsEnabled by viewModel.developerOptionsEnabled.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    LaunchedEffect(viewModel) {
+        viewModel.toast.collect { text ->
+            Toast.makeText(context, context.getString(text.id, *text.args.toTypedArray()), Toast.LENGTH_SHORT).show()
+        }
+    }
 
     SettingsScaffold(
         title = stringResource(R.string.settings_title),
@@ -123,6 +136,7 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_client_version),
                     description = BuildConfig.VERSION_NAME,
                     leading = { IconTile(Icons.Filled.Info) },
+                    onClick = viewModel::onVersionTapped,
                 )
             }
             item {
@@ -141,7 +155,15 @@ fun SettingsScreen(
             }
         }
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-        DebugSettingsEntry(navigator)
+        if (developerOptionsEnabled) {
+            SettingsItem(
+                title = stringResource(R.string.settings_developer_options),
+                description = stringResource(R.string.settings_developer_options_description),
+                leading = { IconTile(Icons.Filled.Code) },
+                onClick = { navigator.navigate(DebugScreenDestination) },
+            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        }
         SettingsItem(
             title = stringResource(R.string.settings_sign_out),
             leading = { IconTile(Icons.AutoMirrored.Filled.Logout, Tone.Error) },
