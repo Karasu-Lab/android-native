@@ -11,6 +11,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -41,6 +42,7 @@ fun DebugScreen(
     viewModel: DebugViewModel = hiltViewModel(),
 ) {
     val info by viewModel.connection.collectAsStateWithLifecycle()
+    val developerOptionsEnabled by viewModel.developerOptionsEnabled.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -53,7 +55,21 @@ fun DebugScreen(
         scope.launch { snackbarHostState.showSnackbar(copiedMessage) }
     }
 
-    SettingsScaffold(title = stringResource(R.string.debug_title), navigator = navigator, snackbarHostState = snackbarHostState) {
+    SettingsScaffold(title = stringResource(R.string.developer_options_title), navigator = navigator, snackbarHostState = snackbarHostState) {
+        SectionHeader(text = stringResource(R.string.settings_section_general))
+        SettingsGroup {
+            item {
+                SettingsItem(
+                    title = stringResource(R.string.developer_options_use),
+                    trailing = {
+                        Switch(
+                            checked = developerOptionsEnabled,
+                            onCheckedChange = viewModel::setDeveloperOptionsEnabled,
+                        )
+                    },
+                )
+            }
+        }
         info?.let { connection ->
             SettingsGroup {
                 item { HostItem(connection.api) }

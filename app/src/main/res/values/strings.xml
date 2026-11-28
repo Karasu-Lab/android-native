@@ -71,9 +71,13 @@
     <string name="settings_connections">アカウント連携</string>
     <string name="settings_authorized_apps">認可したアプリ</string>
     <string name="settings_active_sessions">有効なセッション</string>
-    <string name="settings_debug">デバッグ</string>
-    <string name="settings_debug_description">診断情報を表示します</string>
-    <string name="debug_title">デバッグ</string>
+    <string name="settings_developer_options">開発者向けオプション</string>
+    <string name="settings_developer_options_description">開発者向けの設定と診断情報を表示します</string>
+    <string name="developer_options_title">開発者向けオプション</string>
+    <string name="developer_options_use">開発者向けオプションを使用</string>
+    <string name="developer_options_tap_remaining">あと %1$d 回タップすると開発者向けオプションが有効になります</string>
+    <string name="developer_options_enabled">開発者向けオプションが有効になりました</string>
+    <string name="developer_options_already_enabled">開発者向けオプションは既に有効になっています</string>
     <string name="debug_api_host">接続先ホスト</string>
     <string name="debug_branch">ブランチ</string>
     <string name="debug_unavailable">診断情報を取得できませんでした</string>
