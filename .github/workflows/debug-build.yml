@@ -77,7 +77,7 @@ jobs:
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
         run: |
           ./gradlew --no-daemon :app:assembleDebug \
-            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE" -Pdebuggable=false
 
       - name: Verify APK signature
         run: |
