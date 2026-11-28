@@ -20,6 +20,7 @@ jobs:
   nogms:
     name: Build nogms APKs without GMS or Firebase
     runs-on: ubuntu-latest
+    if: github.event.action != 'edited' || github.event.changes.base != null
     steps:
       - name: Check out source
         uses: actions/checkout@v7
