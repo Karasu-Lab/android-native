@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.2](https://github.com/Karasu-Lab/android-native/compare/v1.16.1...v1.16.2) (2026-11-28)
+
+
+### Bug Fixes
+
+* increase the version code with every commit so store updates are delivered ([f7be3a7](https://github.com/Karasu-Lab/android-native/commit/f7be3a756535ce12c06cd8772a7b910f2294a026))
+
 ## [1.16.1](https://github.com/Karasu-Lab/android-native/compare/v1.16.0...v1.16.1) (2026-11-28)
 
 
