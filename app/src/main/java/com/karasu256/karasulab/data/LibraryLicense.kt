@@ -6,4 +6,5 @@ data class LibraryLicense(
     val version: String,
     val licenseName: String,
     val licenseUrl: String,
+    val licenseText: String,
 )
