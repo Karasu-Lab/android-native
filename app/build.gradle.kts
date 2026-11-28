@@ -191,6 +191,12 @@ if (!buildingNoGmsOnly) {
     apply(plugin = "com.google.firebase.crashlytics")
 }
 
+tasks.configureEach {
+    if (name.startsWith("process") && name.contains("Nogms") && name.endsWith("GoogleServices")) {
+        enabled = false
+    }
+}
+
 val localProperties = Properties().apply {
     val file = rootProject.file("local.properties")
     if (file.exists()) file.inputStream().use { load(it) }
