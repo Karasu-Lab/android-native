@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.10.2](https://github.com/Karasu-Lab/android-native/compare/v1.10.1...v1.10.2) (2026-11-28)
+
+
+### Bug Fixes
+
+* build the debug variant for preview builds ([4995af5](https://github.com/Karasu-Lab/android-native/commit/4995af5ac03241eb96ecbffbbd476b7c244ee117))
+* keep the internal test publishing for the default branch ([5acf0d4](https://github.com/Karasu-Lab/android-native/commit/5acf0d41e07d525c88a12d4b73a2c92fc8eea5b4))
+* publish the preview build to the internal test track on preview merges ([a1ed072](https://github.com/Karasu-Lab/android-native/commit/a1ed0724f322e94c3f327371920853c0c3db8047))
+
 ## [1.10.1](https://github.com/Karasu-Lab/android-native/compare/v1.10.0...v1.10.1) (2026-11-28)
 
 
