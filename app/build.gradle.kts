@@ -1,5 +1,6 @@
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.io.File
+import java.net.URL
 import java.util.Properties
 import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.api.DefaultTask
@@ -33,6 +34,32 @@ abstract class GenerateLicensesTask : DefaultTask() {
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
 
+    private val licenseTextCache = mutableMapOf<String, String?>()
+
+    private val appLicenseText = """
+MIT License
+
+Copyright (c) 2026 Karasu Lab
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+""".trimIndent()
+
     @TaskAction
     fun generate() {
         val entries = linkedMapOf<String, List<String>>()
@@ -45,7 +72,8 @@ abstract class GenerateLicensesTask : DefaultTask() {
                 val key = "$group:$name"
                 if (!entries.containsKey(key)) {
                     val licenses = findLicenses(group, name, version)
-                    entries[key] = listOf(name, group, version, licenses.first, licenses.second)
+                    val text = licenseTextFor(licenses.first, licenses.second)
+                    entries[key] = listOf(name, group, version, licenses.first, licenses.second, text)
                 }
             }
         }
@@ -57,9 +85,10 @@ abstract class GenerateLicensesTask : DefaultTask() {
         body.append("package com.karasu256.karasulab.data\n\n")
         body.append("object GeneratedLicenseCatalog {\n")
         body.append("    val libraries: List<LibraryLicense> = listOf(\n")
-        body.append("        LibraryLicense(\"Karasu Lab Android\", \"com.karasu256.karasulab\", \"${appVersion.get()}\", \"MIT License\", \"https://opensource.org/license/mit\"),\n")
+        body.append("        LibraryLicense(\"Karasu Lab Android\", \"com.karasu256.karasulab\", \"${appVersion.get()}\", \"MIT License\", \"https://opensource.org/license/mit\", \"${escapeText(appLicenseText)}\"),\n")
         entries.values.sortedBy { it[0].lowercase() }.forEach { entry ->
-            body.append("        LibraryLicense(${entry.joinToString(", ") { value -> "\"${escape(value)}\"" }}),\n")
+            val fields = entry.dropLast(1).joinToString(", ") { value -> "\"${escape(value)}\"" }
+            body.append("        LibraryLicense($fields, \"${escapeText(entry.last())}\"),\n")
         }
         body.append("    )\n")
         body.append("}\n")
@@ -72,6 +101,50 @@ abstract class GenerateLicensesTask : DefaultTask() {
         .replace("$", "\\$")
         .replace("\n", " ")
         .replace("\r", " ")
+
+    private fun escapeText(value: String): String = value
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+        .replace("$", "\\$")
+        .replace("\r\n", "\n")
+        .replace("\r", "\n")
+        .replace("\n", "\\n")
+        .replace("\t", "\\t")
+
+    private fun spdxId(licenseName: String, licenseUrl: String): String? {
+        val name = licenseName.lowercase()
+        val url = licenseUrl.lowercase()
+        return when {
+            "spdx.org/licenses/" in url -> licenseUrl.substringAfter("spdx.org/licenses/").trimEnd('/', '.').substringBefore('.')
+            "apache" in name && "2.0" in name -> "Apache-2.0"
+            "apache" in url && "license-2.0" in url -> "Apache-2.0"
+            name == "mit" || "mit license" in name || url.endsWith("/mit") || "mit-license" in url -> "MIT"
+            "bsd-3-clause" in name || "bsd 3-clause" in name -> "BSD-3-Clause"
+            "bsd-2-clause" in name || "bsd 2-clause" in name -> "BSD-2-Clause"
+            "eclipse public license" in name && "2.0" in name -> "EPL-2.0"
+            "eclipse public license" in name && "1.0" in name -> "EPL-1.0"
+            "mozilla public license" in name && "2.0" in name -> "MPL-2.0"
+            "lesser general public license" in name && "2.1" in name -> "LGPL-2.1-only"
+            "lesser general public license" in name && "3" in name -> "LGPL-3.0-only"
+            "general public license" in name && "2" in name -> "GPL-2.0-only"
+            "general public license" in name && "3" in name -> "GPL-3.0-only"
+            else -> null
+        }
+    }
+
+    private fun licenseTextFor(licenseName: String, licenseUrl: String): String {
+        val id = spdxId(licenseName, licenseUrl)
+        if (id != null) {
+            val fetched = licenseTextCache.getOrPut(id) {
+                runCatching { URL("https://spdx.org/licenses/$id.txt").readText() }.getOrNull()
+            }
+            if (!fetched.isNullOrBlank()) return fetched
+        }
+        return buildString {
+            if (licenseName.isNotEmpty()) append("# ").append(licenseName).append("\n\n")
+            if (licenseUrl.isNotEmpty()) append(licenseUrl)
+        }
+    }
 
     private fun findLicenses(group: String, name: String, version: String, depth: Int = 0): Pair<String, String> {
         val pom = findPom(group, name, version) ?: return "" to ""
@@ -294,6 +367,7 @@ dependencies {
     "gmsImplementation"(libs.firebase.crashlytics)
     "gmsImplementation"(libs.firebase.analytics)
     implementation(libs.multiplatform.settings)
+    implementation(libs.compose.markdown)
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
