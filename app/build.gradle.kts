@@ -1,5 +1,6 @@
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.io.File
+import java.net.URL
 import java.util.Properties
 import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.api.DefaultTask
@@ -135,7 +136,7 @@ SOFTWARE.
         val id = spdxId(licenseName, licenseUrl)
         if (id != null) {
             val fetched = licenseTextCache.getOrPut(id) {
-                runCatching { java.net.URL("https://spdx.org/licenses/$id.txt").readText() }.getOrNull()
+                runCatching { URL("https://spdx.org/licenses/$id.txt").readText() }.getOrNull()
             }
             if (!fetched.isNullOrBlank()) return fetched
         }
