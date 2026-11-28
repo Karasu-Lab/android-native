@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.12.2](https://github.com/Karasu-Lab/android-native/compare/v1.12.1...v1.12.2) (2026-11-28)
+
+
+### Bug Fixes
+
+* open the Play Store signing key with the repository store password ([6b3ae5f](https://github.com/Karasu-Lab/android-native/commit/6b3ae5f6da2eb23533bdca264d48c8590a8c1302))
+
+## [1.12.1](https://github.com/Karasu-Lab/android-native/compare/v1.12.0...v1.12.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* keep the original signing keys and skip the signed build when its key cannot be opened ([5b492b1](https://github.com/Karasu-Lab/android-native/commit/5b492b17556d3de7da398fe6b1b770da21357e80))
+* sign with the Play Store passphrase now that the signing key was replaced ([4891332](https://github.com/Karasu-Lab/android-native/commit/4891332ab12f952698765d85846aa9ba33f33f18))
+* use the keystore store password separately from the Play Store key passphrase ([d1e3829](https://github.com/Karasu-Lab/android-native/commit/d1e3829f48ed625178f24a81a0f3f6a91150ec90))
+* use the settings components correctly in the licenses screen ([f2846eb](https://github.com/Karasu-Lab/android-native/commit/f2846ebe241fbafc8f530b80bc3c43512eba2151))
+
+## [1.12.0](https://github.com/Karasu-Lab/android-native/compare/v1.11.0...v1.12.0) (2026-11-28)
+
+
+### Features
+
+* publish to Google Play in a dedicated workflow with a Play Store signing key ([d7d4ca3](https://github.com/Karasu-Lab/android-native/commit/d7d4ca301abd0624d76ec119476c51443a1650ec))
+
 ## [1.11.0](https://github.com/Karasu-Lab/android-native/compare/v1.10.5...v1.11.0) (2026-11-28)
 
 

@@ -69,18 +69,34 @@ jobs:
     outputs:
       available: ${{ steps.check.outputs.available }}
     steps:
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Check signing key
         id: check
         env:
           SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
         run: |
-          if [ -n "$SIGNING_KEY_BASE64" ] || [ -n "$SIGNING_KEY" ]; then
+          if [ -z "$SIGNING_KEY_BASE64" ] && [ -z "$SIGNING_KEY" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "No signing key is available for this run. The signed build will be skipped."
+            exit 0
+          fi
+          STORE_PASS=$(tr -d '\n\r' <<< "${SIGNING_STORE_PASSWORD:-$SIGNING_PASS}")
+          tr -d ' \n\r' <<< "${SIGNING_KEY_BASE64:-$SIGNING_KEY}" | base64 -d > ./signing-check.keystore
+          if [ -n "$STORE_PASS" ] && keytool -list -keystore ./signing-check.keystore -storepass "${STORE_PASS}" > /dev/null 2>&1; then
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "No signing key is available for this run. The signed build and the Google Play upload will be skipped."
+            echo "The signing key could not be opened with the available passphrase. The signed build will be skipped."
           fi
+          rm -f ./signing-check.keystore
 
   android-signed:
     name: Build signed APK and AAB
@@ -302,58 +318,6 @@ jobs:
           path: release-artifacts/**
           if-no-files-found: error
           retention-days: 14
-
-  google-play-release:
-    name: Release to Google Play
-    needs:
-      - android-signed
-      - release_please
-      - signing
-    runs-on: ubuntu-latest
-    if: >-
-      needs.signing.outputs.available == 'true' &&
-      github.event_name == 'push' &&
-      (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
-      github.ref == 'refs/heads/preview')
-    concurrency:
-      group: google-play-release
-      cancel-in-progress: false
-    environment:
-      name: ${{ github.ref == 'refs/heads/preview' && 'preview' || 'production' }}
-    steps:
-      - name: Check out source
-        uses: actions/checkout@v7
-      - name: Determine bundle path
-        id: bundle
-        run: |
-          if [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "path=app/build/outputs/bundle/**/*.aab" >> "$GITHUB_OUTPUT"
-          else
-            echo "path=app/build/outputs/bundle/**/*.aab" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Download signed release bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: android-release-signed-${{ github.sha }}
-          path: app/build/outputs
-      - name: Decode Google Play Service Account Key
-        env:
-          IAM_PRIVATE_KEY: ${{ secrets.IAM_PRIVATE_KEY }}
-        run: |
-          tr -d ' \n\r' <<< '${{ secrets.IAM_PRIVATE_KEY }}' | base64 -d > ./service-account.json
-      - name: Prepare Google Play release notes
-        env:
-          BASE_VERSION: ${{ needs.release_please.outputs.base_version }}
-        run: node .github/workflows/scripts/extract-release-notes.mjs CHANGELOG.md
-      - name: Publish to Google Play
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJson: ./service-account.json
-          packageName: ${{ vars.PACKAGE_NAME }}
-          releaseFiles: ${{ steps.bundle.outputs.path }}
-          tracks: internal
-          releaseName: ${{ needs.release_please.outputs.version_name }}
-          whatsNewDirectory: distribution/whatsnew
 
   github-release-assets:
     name: Attach APK files to the GitHub Release

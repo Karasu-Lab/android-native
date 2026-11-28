@@ -94,7 +94,6 @@
     <string name="licenses_app_license">このアプリのライセンス</string>
     <string name="licenses_open_source">オープンソースライセンス</string>
     <string name="licenses_unknown">ライセンス不明</string>
-    <string name="licenses_open_text">ライセンスの原文を開く</string>
     <string name="settings_account_menu">アカウントメニュー</string>
     <string name="settings_sign_out">サインアウト</string>
     <string name="settings_signing_out">サインアウト中</string>
