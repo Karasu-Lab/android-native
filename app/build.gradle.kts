@@ -193,6 +193,7 @@ android {
 
     buildTypes {
         debug {
+            isDebuggable = (project.findProperty("debuggable") as String?)?.toBoolean() ?: true
             buildConfigField("String", "RELEASE_CHANNEL", "\"internal-test\"")
             buildConfigField("String", "API_HOST", "\"dev-api.karasu256.com\"")
             buildConfigField("String", "AUTH_HOST", "\"dev-api-auth.karasu256.com\"")
