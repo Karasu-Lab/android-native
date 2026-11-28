@@ -63,7 +63,7 @@ jobs:
           {
             echo "base_version=${BASE_VERSION}"
             echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
-            echo "version_code=$((2000000000 + COMMIT_COUNT * 1000 + (V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH) % 1000))"
+            echo "version_code=$((2000000000 + (V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH) * 1000 + COMMIT_COUNT % 1000))"
           } >> "$GITHUB_OUTPUT"
 
   signing:
@@ -267,7 +267,7 @@ jobs:
           IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$BASE_VERSION"
           {
             echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
-            echo "version_code=$((2000000000 + COMMIT_COUNT * 1000 + (V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH) % 1000))"
+            echo "version_code=$((2000000000 + (V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH) * 1000 + COMMIT_COUNT % 1000))"
           } >> "$GITHUB_OUTPUT"
 
       - name: Set up Java

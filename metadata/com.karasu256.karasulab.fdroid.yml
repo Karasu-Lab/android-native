@@ -11,9 +11,9 @@ RepoType: git
 Repo: https://github.com/Karasu-Lab/android-native.git
 
 Builds:
-  - versionName: 1.16.1
-    versionCode: 2000330601
-    commit: v1.16.1
+  - versionName: 1.16.4
+    versionCode: 2011604344
+    commit: v1.16.4
     subdir: app
     prebuild:
       - $$SDK$$/cmdline-tools/latest/bin/sdkmanager --channel=3 "platforms;android-37.1" "build-tools;37.0.0"
@@ -29,5 +29,5 @@ Builds:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.16.1
-CurrentVersionCode: 2000330601
+CurrentVersion: 1.16.4
+CurrentVersionCode: 2011604344
