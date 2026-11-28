@@ -12,7 +12,7 @@ Repo: https://github.com/Karasu-Lab/android-native.git
 
 Builds:
   - versionName: 1.15.0
-    versionCode: 11500
+    versionCode: 2000011500
     commit: v1.15.0
     subdir: app
     prebuild:
@@ -34,4 +34,4 @@ Builds:
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
 CurrentVersion: 1.15.0
-CurrentVersionCode: 11500
+CurrentVersionCode: 2000011500

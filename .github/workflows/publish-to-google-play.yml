@@ -35,7 +35,7 @@ jobs:
           {
             echo "base_version=${BASE_VERSION}"
             echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
-            echo "version_code=$((V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH))"
+            echo "version_code=$((2000000000 + V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH))"
           } >> "$GITHUB_OUTPUT"
 
   playstore-signing:
