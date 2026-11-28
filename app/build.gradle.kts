@@ -442,9 +442,10 @@ androidComponents {
     }
     onVariants { variant ->
         val isFdroid = variant.name.startsWith("fdroid")
+        val variantLabel = variant.name.removePrefix("standard").replaceFirstChar { it.lowercase() }
         variant.outputs.forEach { output ->
             output.versionCode.set(appVersionCode)
-            output.versionName.set("$baseVersionName-${variant.name}-$shortCommit+$appVersionCode")
+            output.versionName.set("$baseVersionName-$variantLabel-$shortCommit+$appVersionCode")
         }
         val capitalized = variant.name.replaceFirstChar { it.uppercase() }
         val licensesTask = tasks.register<GenerateLicensesTask>("generate${capitalized}Licenses") {
