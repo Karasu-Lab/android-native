@@ -53,7 +53,9 @@ introduced, while staying below the maximum version code of
 every commit, so the stores can deliver an update for every build,
 including several builds of the same Release Please version. Every
 variant is named `<version>-<variant>-<short commit>+<version code>`,
-for example `1.16.1-fdroidNogmsRelease-0123abc+2000330601`.
+for example `1.16.1-fdroidNogmsRelease-0123abc+2000330601`. The
+standard channel adds no label of its own, so the standard gms release
+variant is named `1.16.1-gmsRelease-0123abc+2000330601`, for example.
 
 Build and test the standard gms debug variant with Gradle in CI:
 
