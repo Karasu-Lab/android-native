@@ -10,7 +10,6 @@ import com.karasu256.karasulab.auth.ProviderLinkFlow
 import com.karasu256.karasulab.data.AuthRepository
 import com.karasu256.karasulab.data.LinkedProviderRepository
 import com.karasu256.karasulab.data.OAuthProvider
-import com.karasu256.karasulab.data.OAuthProviderRepository
 import com.karasu256.karasulab.data.ProviderClient
 import com.karasu256.karasulab.data.ProviderClientRepository
 import com.karasu256.karasulab.data.CachedProviderProfile
@@ -62,7 +61,6 @@ class LinkedAccountsViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val linkedProviderRepository: LinkedProviderRepository,
     private val securityRepository: SecurityRepository,
-    private val oauthProviderRepository: OAuthProviderRepository,
     profileCache: ProviderProfileCacheRepository,
     clientRepository: ProviderClientRepository,
 ) : ViewModel() {
@@ -112,18 +110,20 @@ class LinkedAccountsViewModel @Inject constructor(
         _uiState.update { it.copy(loading = true, loadFailed = false, busyProviderId = null) }
         viewModelScope.launch {
             val profiles = attempt { linkedProviderRepository.profiles() }
-            val providers = attempt { oauthProviderRepository.list("link") }
             val security = attempt { securityRepository.settings() }
             _uiState.update { state ->
                 state.copy(
                     loading = false,
-                    loadFailed = profiles.isFailure || providers.isFailure,
-                    providers = providers.getOrNull()?.filter(OAuthProvider::link) ?: state.providers,
+                    loadFailed = profiles.isFailure,
                     hasPasskeys = security.getOrNull()?.passkeys?.isNotEmpty() ?: state.hasPasskeys,
                     hasPassword = security.getOrNull()?.hasPassword ?: state.hasPassword,
                 )
             }
         }
+    }
+
+    fun updateProviders(providers: List<OAuthProvider>) {
+        _uiState.update { it.copy(providers = providers) }
     }
 
     private suspend fun refreshProvider(providerId: String) {
