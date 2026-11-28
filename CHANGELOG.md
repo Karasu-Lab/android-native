@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.1](https://github.com/Karasu-Lab/android-native/compare/v1.10.0...v1.10.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* resolve the unsigned build's google-services.json from its environment ([e9570d8](https://github.com/Karasu-Lab/android-native/commit/e9570d8f5e64833804519dcbebfcf95e06cbb8a6))
+
 ## [1.10.0](https://github.com/Karasu-Lab/android-native/compare/v1.9.1...v1.10.0) (2026-11-28)
 
 
