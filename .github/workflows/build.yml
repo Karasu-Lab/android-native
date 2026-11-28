@@ -314,15 +314,24 @@ jobs:
     if: >-
       needs.signing.outputs.available == 'true' &&
       github.event_name == 'push' &&
-      github.ref == 'refs/heads/preview'
+      (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
+      github.ref == 'refs/heads/preview')
     concurrency:
       group: google-play-release
       cancel-in-progress: false
     environment:
-      name: preview
+      name: ${{ github.ref == 'refs/heads/preview' && 'preview' || 'production' }}
     steps:
       - name: Check out source
         uses: actions/checkout@v7
+      - name: Determine bundle path
+        id: bundle
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/preview" ]; then
+            echo "path=app/build/outputs/bundle/debug/*.aab" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=app/build/outputs/bundle/release/*.aab" >> "$GITHUB_OUTPUT"
+          fi
       - name: Download signed release bundle
         uses: actions/download-artifact@v4
         with:
@@ -343,7 +352,7 @@ jobs:
         with:
           serviceAccountJson: ./service-account.json
           packageName: ${{ vars.PACKAGE_NAME }}
-          releaseFiles: app/build/outputs/bundle/debug/*.aab
+          releaseFiles: ${{ steps.bundle.outputs.path }}
           tracks: internal
           releaseName: ${{ needs.release_please.outputs.version_name }}
           whatsNewDirectory: distribution/whatsnew
@@ -354,7 +363,7 @@ jobs:
         with:
           serviceAccountJson: ./service-account.json
           packageName: ${{ vars.PACKAGE_NAME }}
-          releaseFiles: app/build/outputs/bundle/debug/*.aab
+          releaseFiles: ${{ steps.bundle.outputs.path }}
           tracks: internal
           releaseName: ${{ needs.release_please.outputs.version_name }}
           whatsNewDirectory: distribution/whatsnew
