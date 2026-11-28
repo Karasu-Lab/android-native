@@ -16,15 +16,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Write google-services.json
-        env:
-          GOOGLE_SERVICE_JSON: ${{ vars.GOOGLE_SERVICE_JSON }}
-        run: |
-          if [ -n "${GOOGLE_SERVICE_JSON}" ]; then
-            printf '%s' "${GOOGLE_SERVICE_JSON}" > app/google-services.json
-            jq -e . app/google-services.json > /dev/null
-          fi
-
       - name: Prepare signing key
         env:
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
@@ -76,14 +67,14 @@ jobs:
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
         run: |
-          ./gradlew --no-daemon :app:assembleDebug \
+          ./gradlew --no-daemon :app:assembleGmsDebug \
             -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE" -Pdebuggable=false
 
       - name: Verify APK signature
         run: |
           APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
-          APK=$(ls app/build/outputs/apk/debug/*.apk | head -n1)
-          REPORT=app/build/outputs/apk/debug/apksigner-report.txt
+          APK=$(ls app/build/outputs/apk/gms/debug/*.apk | head -n1)
+          REPORT=app/build/outputs/apk/gms/debug/apksigner-report.txt
           set +e
           "$APKSIGNER" verify --verbose --print-certs "$APK" > "$REPORT" 2>&1
           STATUS=$?
@@ -101,6 +92,6 @@ jobs:
         with:
           name: android-debug-signed-${{ github.sha }}
           path: |
-            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/gms/debug/*.apk
           if-no-files-found: error
           retention-days: 14

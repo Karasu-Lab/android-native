@@ -18,19 +18,27 @@ val provider = GoogleFont.Provider(
     certificates = R.array.com_google_android_gms_fonts_certs
 )
 
-val bodyFontFamily = FontFamily(
-    Font(
-        googleFont = GoogleFont("Roboto"),
-        fontProvider = provider,
+val bodyFontFamily = if (com.karasu256.karasulab.BuildConfig.GMS_AVAILABLE) {
+    FontFamily(
+        Font(
+            googleFont = GoogleFont("Roboto"),
+            fontProvider = provider,
+        )
     )
-)
+} else {
+    FontFamily.Default
+}
 
-val displayFontFamily = FontFamily(
-    Font(
-        googleFont = GoogleFont("Noto Sans JP"),
-        fontProvider = provider,
+val displayFontFamily = if (com.karasu256.karasulab.BuildConfig.GMS_AVAILABLE) {
+    FontFamily(
+        Font(
+            googleFont = GoogleFont("Noto Sans JP"),
+            fontProvider = provider,
+        )
     )
-)
+} else {
+    FontFamily.Default
+}
 
 val baseline = Typography()
 

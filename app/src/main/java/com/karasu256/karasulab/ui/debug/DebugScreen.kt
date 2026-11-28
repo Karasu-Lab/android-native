@@ -22,7 +22,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.firebase.FirebaseApp
 import com.karasu256.karasulab.R
 import com.karasu256.karasulab.data.HostConnection
 import com.karasu256.karasulab.data.HostStatus
@@ -47,7 +46,7 @@ fun DebugScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val fingerprints = remember(context) { signingFingerprints(context) }
-    val firebaseOptions = remember { runCatching { FirebaseApp.getInstance().options }.getOrNull() }
+    val firebaseOptions = viewModel.firebaseProjectInfo
     val copiedMessage = stringResource(R.string.debug_fingerprint_copied)
 
     fun copyFingerprint(label: String, value: String) {
@@ -99,25 +98,27 @@ fun DebugScreen(
                 )
             }
         }
-        SectionHeader(text = stringResource(R.string.debug_firebase_section))
-        SettingsGroup {
-            item {
-                SettingsItem(
-                    title = stringResource(R.string.debug_firebase_project_id),
-                    description = firebaseOptions?.projectId ?: stringResource(R.string.debug_unavailable),
-                )
-            }
-            item {
-                SettingsItem(
-                    title = stringResource(R.string.debug_firebase_project_number),
-                    description = firebaseOptions?.gcmSenderId ?: stringResource(R.string.debug_unavailable),
-                )
-            }
-            item {
-                SettingsItem(
-                    title = stringResource(R.string.debug_firebase_app_id),
-                    description = firebaseOptions?.applicationId ?: stringResource(R.string.debug_unavailable),
-                )
+        if (firebaseOptions != null) {
+            SectionHeader(text = stringResource(R.string.debug_firebase_section))
+            SettingsGroup {
+                item {
+                    SettingsItem(
+                        title = stringResource(R.string.debug_firebase_project_id),
+                        description = firebaseOptions.projectId ?: stringResource(R.string.debug_unavailable),
+                    )
+                }
+                item {
+                    SettingsItem(
+                        title = stringResource(R.string.debug_firebase_project_number),
+                        description = firebaseOptions.projectNumber ?: stringResource(R.string.debug_unavailable),
+                    )
+                }
+                item {
+                    SettingsItem(
+                        title = stringResource(R.string.debug_firebase_app_id),
+                        description = firebaseOptions.appId ?: stringResource(R.string.debug_unavailable),
+                    )
+                }
             }
         }
     }

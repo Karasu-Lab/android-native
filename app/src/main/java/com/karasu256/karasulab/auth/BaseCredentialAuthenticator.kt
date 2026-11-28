@@ -1,13 +1,11 @@
 package com.karasu256.karasulab.auth
 
 import android.app.Activity
-import com.karasu256.karasulab.logging.Log
 import androidx.credentials.Credential
 import androidx.credentials.CreatePublicKeyCredentialRequest
 import androidx.credentials.CreatePublicKeyCredentialResponse
 import androidx.credentials.CredentialManager
 import androidx.credentials.CredentialOption
-import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetPublicKeyCredentialOption
 import androidx.credentials.PublicKeyCredential
@@ -15,21 +13,12 @@ import androidx.credentials.exceptions.CreateCredentialCancellationException
 import androidx.credentials.exceptions.CreateCredentialException
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
-import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.karasu256.karasulab.BuildConfig
+import com.karasu256.karasulab.logging.Log
 
-class CredentialAuthenticator(private val activity: Activity) : CredentialProvider {
-    private val credentialManager = CredentialManager.create(activity)
+open class BaseCredentialAuthenticator(protected val activity: Activity) : CredentialProvider {
+    protected val credentialManager: CredentialManager = CredentialManager.create(activity)
 
-    override suspend fun requestGoogleIdToken(): String? {
-        val option = GetSignInWithGoogleOption.Builder(BuildConfig.GOOGLE_SERVER_CLIENT_ID).build()
-        val credential = request(option) ?: return null
-        check(credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-            "Unexpected credential type: ${credential.type}"
-        }
-        return GoogleIdTokenCredential.createFrom(credential.data).idToken
-    }
+    override suspend fun requestGoogleIdToken(): String? = null
 
     override suspend fun requestPasskeyAssertion(requestJson: String): String? {
         val credential = request(GetPublicKeyCredentialOption(requestJson)) ?: return null
@@ -49,7 +38,7 @@ class CredentialAuthenticator(private val activity: Activity) : CredentialProvid
         throw e
     }
 
-    private suspend fun request(option: CredentialOption): Credential? = try {
+    protected suspend fun request(option: CredentialOption): Credential? = try {
         credentialManager.getCredential(activity, GetCredentialRequest(listOf(option))).credential
     } catch (e: GetCredentialCancellationException) {
         Log.e("CredentialAuthenticator", "Credential request cancelled: ${e.type}: ${e.errorMessage}", e)

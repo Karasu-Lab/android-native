@@ -1,5 +1,6 @@
 package com.karasu256.karasulab.auth
 
+import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.data.AuthRepository
 import com.karasu256.karasulab.data.SignInResult
 
@@ -30,7 +31,7 @@ open class ProviderLoginFlow(
     companion object {
         fun forProvider(providerId: String, authRepository: AuthRepository, email: String? = null): ProviderLoginFlow =
             when (providerId) {
-                "google" -> GoogleLoginFlow(authRepository)
+                "google" if BuildConfig.GMS_AVAILABLE -> GoogleLoginFlow(authRepository)
                 "passkey" -> PasskeyLoginFlow(authRepository, email)
                 else -> ProviderLoginFlow(authRepository)
             }

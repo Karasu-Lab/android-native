@@ -1,5 +1,15 @@
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
+import java.io.File
 import java.util.Properties
+import javax.xml.parsers.DocumentBuilderFactory
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.TaskAction
+import org.w3c.dom.Element
 
 plugins {
     alias(libs.plugins.android.application)
@@ -8,8 +18,104 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     alias(libs.plugins.room)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.crashlytics)
+}
+
+abstract class GenerateLicensesTask : DefaultTask() {
+    @get:Input
+    abstract val dependencyCoordinates: ListProperty<String>
+
+    @get:Input
+    abstract val gradleUserHome: Property<String>
+
+    @get:Input
+    abstract val appVersion: Property<String>
+
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    @TaskAction
+    fun generate() {
+        val entries = linkedMapOf<String, List<String>>()
+        dependencyCoordinates.get().forEach { coordinate ->
+            val parts = coordinate.split(":")
+            if (parts.size >= 3) {
+                val group = parts[0]
+                val name = parts[1]
+                val version = parts.drop(2).joinToString(":")
+                val key = "$group:$name"
+                if (!entries.containsKey(key)) {
+                    val licenses = findLicenses(group, name, version)
+                    entries[key] = listOf(name, group, version, licenses.first, licenses.second)
+                }
+            }
+        }
+        val output = outputDirectory.get().asFile
+        val directory = File(output, "com/karasu256/karasulab/data")
+        directory.mkdirs()
+        val file = File(directory, "GeneratedLicenseCatalog.kt")
+        val body = StringBuilder()
+        body.append("package com.karasu256.karasulab.data\n\n")
+        body.append("object GeneratedLicenseCatalog {\n")
+        body.append("    val libraries: List<LibraryLicense> = listOf(\n")
+        body.append("        LibraryLicense(\"Karasu Lab Android\", \"com.karasu256.karasulab\", \"${appVersion.get()}\", \"MIT License\", \"https://opensource.org/license/mit\"),\n")
+        entries.values.sortedBy { it[0].lowercase() }.forEach { entry ->
+            body.append("        LibraryLicense(${entry.joinToString(", ") { value -> "\"${escape(value)}\"" }}),\n")
+        }
+        body.append("    )\n")
+        body.append("}\n")
+        file.writeText(body.toString())
+    }
+
+    private fun escape(value: String): String = value
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+        .replace("$", "\\$")
+        .replace("\n", " ")
+        .replace("\r", " ")
+
+    private fun findLicenses(group: String, name: String, version: String, depth: Int = 0): Pair<String, String> {
+        val pom = findPom(group, name, version) ?: return "" to ""
+        val document = runCatching {
+            DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(pom)
+        }.getOrNull() ?: return "" to ""
+        val licenses = document.getElementsByTagName("license")
+        if (licenses.length > 0) {
+            val element = licenses.item(0) as Element
+            val licenseName = element.getElementsByTagName("name").item(0)?.textContent?.trim().orEmpty()
+            val licenseUrl = element.getElementsByTagName("url").item(0)?.textContent?.trim().orEmpty()
+            if (licenseName.isNotEmpty()) return licenseName to licenseUrl
+        }
+        if (depth < 3) {
+            val parents = document.getElementsByTagName("parent")
+            if (parents.length > 0) {
+                val parent = parents.item(0) as Element
+                val parentGroup = parent.getElementsByTagName("groupId").item(0)?.textContent?.trim().orEmpty()
+                val parentName = parent.getElementsByTagName("artifactId").item(0)?.textContent?.trim().orEmpty()
+                val parentVersion = parent.getElementsByTagName("version").item(0)?.textContent?.trim().orEmpty()
+                if (parentGroup.isNotEmpty() && parentName.isNotEmpty() && parentVersion.isNotEmpty()) {
+                    return findLicenses(parentGroup, parentName, parentVersion, depth + 1)
+                }
+            }
+        }
+        return "" to ""
+    }
+
+    private fun findPom(group: String, name: String, version: String): File? {
+        val base = File(
+            gradleUserHome.get(),
+            "caches/modules-2/files-2.1/$group/$name/$version",
+        )
+        if (!base.exists()) return null
+        return base.walkTopDown().firstOrNull { it.isFile && it.name == "$name-$version.pom" }
+    }
+}
+
+val requestedTaskNames = gradle.startParameter.taskNames
+val buildingNoGmsOnly = requestedTaskNames.any { it.contains("nogms", ignoreCase = true) } &&
+    requestedTaskNames.none { it.replace("nogms", "", ignoreCase = true).contains("gms", ignoreCase = true) }
+if (!buildingNoGmsOnly) {
+    apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
 }
 
 val localProperties = Properties().apply {
@@ -46,6 +152,20 @@ android {
             "GOOGLE_SERVER_CLIENT_ID",
             "\"291377837692-haa4bsiure8qm70ionnaamb356qf6uca.apps.googleusercontent.com\""
         )
+    }
+
+    flavorDimensions += "distribution"
+
+    productFlavors {
+        create("gms") {
+            dimension = "distribution"
+            isDefault = true
+            buildConfigField("boolean", "GMS_AVAILABLE", "true")
+        }
+        create("nogms") {
+            dimension = "distribution"
+            buildConfigField("boolean", "GMS_AVAILABLE", "false")
+        }
     }
 
     signingConfigs {
@@ -92,8 +212,10 @@ android {
             if (keystoreFile.exists()) {
                 signingConfig = signingConfigs.findByName("release")
             }
-            configure<CrashlyticsExtension> {
-                nativeSymbolUploadEnabled = true
+            if (pluginManager.hasPlugin("com.google.firebase.crashlytics")) {
+                configure<CrashlyticsExtension> {
+                    nativeSymbolUploadEnabled = true
+                }
             }
         }
         release {
@@ -164,16 +286,34 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.credentials)
-    implementation(libs.androidx.credentials.play.services.auth)
-    implementation(libs.googleid)
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.crashlytics)
-    implementation(libs.firebase.analytics)
+    "gmsImplementation"(libs.androidx.credentials.play.services.auth)
+    "gmsImplementation"(libs.googleid)
+    "gmsImplementation"(platform(libs.firebase.bom))
+    "gmsImplementation"(libs.firebase.auth)
+    "gmsImplementation"(libs.firebase.firestore)
+    "gmsImplementation"(libs.firebase.crashlytics)
+    "gmsImplementation"(libs.firebase.analytics)
     implementation(libs.multiplatform.settings)
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+}
+
+androidComponents {
+    onVariants { variant ->
+        val capitalized = variant.name.replaceFirstChar { it.uppercase() }
+        val licensesTask = tasks.register<GenerateLicensesTask>("generate${capitalized}Licenses") {
+            outputs.upToDateWhen { false }
+            dependencyCoordinates.set(
+                configurations.getByName("${variant.name}RuntimeClasspath")
+                    .incoming.artifacts.resolvedArtifacts
+                    .map { results -> results.map { result -> result.id.componentIdentifier.displayName }.distinct() }
+            )
+            gradleUserHome.set(gradle.gradleUserHomeDir.absolutePath)
+            appVersion.set(appVersionName)
+            outputDirectory.set(layout.buildDirectory.dir("generated/licenses/${variant.name}"))
+        }
+        variant.sources.java?.addGeneratedSourceDirectory(licensesTask, GenerateLicensesTask::outputDirectory)
+    }
 }
