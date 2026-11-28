@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.3](https://github.com/Karasu-Lab/android-native/compare/v1.10.2...v1.10.3) (2026-11-28)
+
+
+### Bug Fixes
+
+* run the signed build for manually dispatched runs ([8932609](https://github.com/Karasu-Lab/android-native/commit/893260944fea3a0a7af5ed3d1aa14f58e6d5a7db))
+
 ## [1.10.2](https://github.com/Karasu-Lab/android-native/compare/v1.10.1...v1.10.2) (2026-11-28)
 
 
