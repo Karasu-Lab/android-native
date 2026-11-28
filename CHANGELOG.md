@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.13.0](https://github.com/Karasu-Lab/android-native/compare/v1.12.3...v1.13.0) (2026-11-28)
+
+
+### Features
+
+* Add a local debug build type with its own application ID ([0910225](https://github.com/Karasu-Lab/android-native/commit/091022507348e2942a1035928378500d0f2dc5c9))
+* Use a separate application ID for debug builds ([2a83eab](https://github.com/Karasu-Lab/android-native/commit/2a83eab4494c74837dee5000179ff43e3b5ae52a))
+
+
+### Bug Fixes
+
+* Limit the debug application ID suffix to local builds ([c45b803](https://github.com/Karasu-Lab/android-native/commit/c45b8035da70d00740798afc83e93fe90e2a65e5))
+* Use the AGP 9 variant builder property to disable the nogms local debug variant ([f9b3f33](https://github.com/Karasu-Lab/android-native/commit/f9b3f33f09d0cf627eb4b183b7a48b37ddde0507))
+
 ## [1.12.3](https://github.com/Karasu-Lab/android-native/compare/v1.12.2...v1.12.3) (2026-11-28)
 
 
