@@ -194,15 +194,22 @@ SOFTWARE.
 }
 
 val requestedTaskNames = gradle.startParameter.taskNames
-val buildingNoGmsOnly = requestedTaskNames.any { it.contains("nogms", ignoreCase = true) } &&
-    requestedTaskNames.none { it.replace("nogms", "", ignoreCase = true).contains("gms", ignoreCase = true) }
+val buildingNoGmsOnly = requestedTaskNames.any {
+    it.contains("nogms", ignoreCase = true) || it.contains("fdroid", ignoreCase = true)
+} && requestedTaskNames.none {
+    it.replace("nogms", "", ignoreCase = true).replace("fdroid", "", ignoreCase = true)
+        .contains("gms", ignoreCase = true)
+}
 if (!buildingNoGmsOnly) {
     apply(plugin = "com.google.gms.google-services")
     apply(plugin = "com.google.firebase.crashlytics")
 }
 
 tasks.configureEach {
-    if (name.startsWith("process") && name.contains("Nogms") && name.endsWith("GoogleServices")) {
+    if (name.startsWith("process") &&
+        (name.contains("Nogms") || name.contains("Fdroid")) &&
+        name.endsWith("GoogleServices")
+    ) {
         enabled = false
     }
 }
@@ -297,12 +304,15 @@ android {
     sourceSets {
         getByName("gms") {
             java.srcDir("src/composeMarkdown/java")
+            kotlin.srcDir("src/composeMarkdown/java")
         }
         getByName("nogms") {
             java.srcDir("src/composeMarkdown/java")
+            kotlin.srcDir("src/composeMarkdown/java")
         }
         getByName("fdroid") {
             java.srcDirs("src/fdroid/java", "src/nogms/java")
+            kotlin.srcDirs("src/fdroid/java", "src/nogms/java")
         }
     }
 
