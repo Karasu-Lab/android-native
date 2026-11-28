@@ -291,6 +291,10 @@ android {
                 }
             }
         }
+        create("localDebug") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".debug"
+        }
         release {
             manifestPlaceholders += mapOf()
             buildConfigField("String", "RELEASE_CHANNEL", "\"production\"")
@@ -375,6 +379,9 @@ dependencies {
 }
 
 androidComponents {
+    beforeVariants(selector().withBuildType("localDebug").withFlavor("distribution" to "nogms")) {
+        it.enable = false
+    }
     onVariants { variant ->
         val capitalized = variant.name.replaceFirstChar { it.uppercase() }
         val licensesTask = tasks.register<GenerateLicensesTask>("generate${capitalized}Licenses") {

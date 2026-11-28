@@ -26,12 +26,25 @@ Mobile Services and Firebase and uses the native Google sign-in. The
 `nogms` flavor has no GMS or Firebase dependency, disables Firebase
 features, and uses the standard web provider flow for Google sign-in.
 Both flavors provide debug and release build types.
+The application ID is `com.karasu256.karasulab`, except for the
+`localDebug` build type, which uses `com.karasu256.karasulab.debug`.
+The `localDebug` build type inherits the debug configuration and is
+only available with the gms flavor, as the `gmsLocalDebug` variant.
+Its google-services configuration is placed in
+`app/src/gmsLocalDebug/google-services.json`. The debug and release
+build types use the base application ID.
 
 Build and test the gms debug variant with Gradle:
 
 ```sh
 ./gradlew :app:assembleGmsDebug
 ./gradlew :app:testGmsDebugUnitTest
+```
+
+To build the local debug variant with its own application ID:
+
+```sh
+./gradlew :app:assembleGmsLocalDebug
 ```
 
 To build a gms release APK and Android App Bundle:
