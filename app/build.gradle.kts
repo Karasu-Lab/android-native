@@ -4,6 +4,7 @@ import java.util.Properties
 import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
@@ -21,7 +22,10 @@ plugins {
 
 abstract class GenerateLicensesTask : DefaultTask() {
     @get:Input
-    abstract val runtimeClasspathName: Property<String>
+    abstract val dependencyCoordinates: ListProperty<String>
+
+    @get:Input
+    abstract val gradleUserHome: Property<String>
 
     @get:Input
     abstract val appVersion: Property<String>
@@ -31,14 +35,18 @@ abstract class GenerateLicensesTask : DefaultTask() {
 
     @TaskAction
     fun generate() {
-        val configuration = project.configurations.getByName(runtimeClasspathName.get())
         val entries = linkedMapOf<String, List<String>>()
-        configuration.resolvedConfiguration.resolvedArtifacts.forEach { artifact ->
-            val id = artifact.moduleVersion.id
-            val key = "${id.group}:${id.name}"
-            if (!entries.containsKey(key)) {
-                val licenses = findLicenses(id.group, id.name, id.version)
-                entries[key] = listOf(id.name, id.group, id.version, licenses.first, licenses.second)
+        dependencyCoordinates.get().forEach { coordinate ->
+            val parts = coordinate.split(":")
+            if (parts.size >= 3) {
+                val group = parts[0]
+                val name = parts[1]
+                val version = parts.drop(2).joinToString(":")
+                val key = "$group:$name"
+                if (!entries.containsKey(key)) {
+                    val licenses = findLicenses(group, name, version)
+                    entries[key] = listOf(name, group, version, licenses.first, licenses.second)
+                }
             }
         }
         val output = outputDirectory.get().asFile
@@ -94,7 +102,7 @@ abstract class GenerateLicensesTask : DefaultTask() {
 
     private fun findPom(group: String, name: String, version: String): File? {
         val base = File(
-            project.gradle.gradleUserHomeDir,
+            gradleUserHome.get(),
             "caches/modules-2/files-2.1/$group/$name/$version",
         )
         if (!base.exists()) return null
@@ -296,7 +304,12 @@ androidComponents {
         val capitalized = variant.name.replaceFirstChar { it.uppercase() }
         val licensesTask = tasks.register<GenerateLicensesTask>("generate${capitalized}Licenses") {
             outputs.upToDateWhen { false }
-            runtimeClasspathName.set("${variant.name}RuntimeClasspath")
+            dependencyCoordinates.set(
+                configurations.getByName("${variant.name}RuntimeClasspath")
+                    .incoming.artifacts.resolvedArtifacts
+                    .map { results -> results.map { result -> result.id.componentIdentifier.displayName }.distinct() }
+            )
+            gradleUserHome.set(gradle.gradleUserHomeDir.absolutePath)
             appVersion.set(appVersionName)
             outputDirectory.set(layout.buildDirectory.dir("generated/licenses/${variant.name}"))
         }
