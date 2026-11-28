@@ -125,8 +125,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/preview" ]; then
             echo "tasks=:app:assembleGmsDebug :app:bundleGmsDebug :app:assembleNogmsDebug" >> "$GITHUB_OUTPUT"
-            echo "apk_dir=app/build/outputs/apk/gms/debug" >> "$GITHUB_OUTPUT"
-            echo "nogms_apk_dir=app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
+            echo "apk_dirs=app/build/outputs/apk/gms/debug app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
               echo "app/build/outputs/apk/gms/debug/*.apk"
@@ -135,13 +134,14 @@ jobs:
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           else
-            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease :app:assembleNogmsRelease" >> "$GITHUB_OUTPUT"
-            echo "apk_dir=app/build/outputs/apk/gms/release" >> "$GITHUB_OUTPUT"
-            echo "nogms_apk_dir=app/build/outputs/apk/nogms/release" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease :app:assembleNogmsRelease :app:assembleGmsDebug :app:bundleGmsDebug :app:assembleNogmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dirs=app/build/outputs/apk/gms/release app/build/outputs/apk/nogms/release app/build/outputs/apk/gms/debug app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
               echo "app/build/outputs/apk/gms/release/*.apk"
               echo "app/build/outputs/apk/nogms/release/*.apk"
+              echo "app/build/outputs/apk/gms/debug/*.apk"
+              echo "app/build/outputs/apk/nogms/debug/*.apk"
               echo "app/build/outputs/bundle/**/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
@@ -193,7 +193,7 @@ jobs:
         run: |
           APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
           STATUS=0
-          for APK_DIR in "${{ steps.variant.outputs.apk_dir }}" "${{ steps.variant.outputs.nogms_apk_dir }}"; do
+          for APK_DIR in ${{ steps.variant.outputs.apk_dirs }}; do
             APK=$(ls "$APK_DIR"/*.apk | head -n1)
             REPORT="$APK_DIR/apksigner-report.txt"
             set +e
@@ -234,8 +234,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/preview" ]; then
             echo "tasks=:app:assembleGmsDebug :app:assembleNogmsDebug" >> "$GITHUB_OUTPUT"
-            echo "apk_dir=app/build/outputs/apk/gms/debug" >> "$GITHUB_OUTPUT"
-            echo "nogms_apk_dir=app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
+            echo "apk_dirs=app/build/outputs/apk/gms/debug app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
               echo "app/build/outputs/apk/gms/debug/*.apk"
@@ -243,13 +242,14 @@ jobs:
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           else
-            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease :app:assembleNogmsRelease" >> "$GITHUB_OUTPUT"
-            echo "apk_dir=app/build/outputs/apk/gms/release" >> "$GITHUB_OUTPUT"
-            echo "nogms_apk_dir=app/build/outputs/apk/nogms/release" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease :app:assembleNogmsRelease :app:assembleGmsDebug :app:assembleNogmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dirs=app/build/outputs/apk/gms/release app/build/outputs/apk/nogms/release app/build/outputs/apk/gms/debug app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
               echo "app/build/outputs/apk/gms/release/*.apk"
               echo "app/build/outputs/apk/nogms/release/*.apk"
+              echo "app/build/outputs/apk/gms/debug/*.apk"
+              echo "app/build/outputs/apk/nogms/debug/*.apk"
               echo "app/build/outputs/bundle/**/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
@@ -293,7 +293,7 @@ jobs:
       - name: Verify APK signature
         run: |
           APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
-          for APK_DIR in "${{ steps.variant.outputs.apk_dir }}" "${{ steps.variant.outputs.nogms_apk_dir }}"; do
+          for APK_DIR in ${{ steps.variant.outputs.apk_dirs }}; do
             APK=$(ls "$APK_DIR"/*.apk | head -n1)
             REPORT="$APK_DIR/apksigner-report.txt"
             set +e
@@ -374,7 +374,18 @@ jobs:
             echo "No GitHub Release for $TAG_NAME. Skipping."
             exit 0
           fi
-          mapfile -t APK_FILES < <(find release-assets -name '*.apk' -type f)
+          mkdir -p release-upload
+          while IFS= read -r APK; do
+            cp "$APK" "release-upload/$(basename "$APK")"
+          done < <(find release-assets/signed -name '*.apk' -type f)
+          while IFS= read -r APK; do
+            NAME=$(basename "$APK")
+            if [ -e "release-upload/$NAME" ]; then
+              NAME="${NAME%.apk}-unsigned.apk"
+            fi
+            cp "$APK" "release-upload/$NAME"
+          done < <(find release-assets/unsigned -name '*.apk' -type f)
+          mapfile -t APK_FILES < <(find release-upload -name '*.apk' -type f)
           if [ "${#APK_FILES[@]}" -eq 0 ]; then
             echo "No APK files found in the build artifacts."
             exit 1
