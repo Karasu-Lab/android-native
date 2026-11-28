@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Description
@@ -135,17 +136,20 @@ fun SettingsScreen(
         SettingsGroup {
             item {
                 SettingsItem(
+                    title = stringResource(R.string.settings_licenses),
+                    leading = { IconTile(Icons.Filled.Description) },
+                    onClick = { navigator.navigate(LicensesScreenDestination) },
+                )
+            }
+        }
+        SectionHeader(stringResource(R.string.settings_section_build_info))
+        SettingsGroup {
+            item {
+                SettingsItem(
                     title = stringResource(R.string.settings_client_version),
                     description = BuildConfig.VERSION_NAME,
                     leading = { IconTile(Icons.Filled.Info) },
                     onClick = viewModel::onVersionTapped,
-                )
-            }
-            item {
-                SettingsItem(
-                    title = stringResource(R.string.settings_licenses),
-                    leading = { IconTile(Icons.Filled.Description) },
-                    onClick = { navigator.navigate(LicensesScreenDestination) },
                 )
             }
             item {
@@ -160,6 +164,13 @@ fun SettingsScreen(
                         }
                     ),
                     leading = { IconTile(Icons.Filled.Update) },
+                )
+            }
+            item {
+                SettingsItem(
+                    title = stringResource(R.string.settings_build_type),
+                    description = BuildConfig.FLAVOR + BuildConfig.BUILD_TYPE.replaceFirstChar { it.uppercase() },
+                    leading = { IconTile(Icons.Filled.Build) },
                 )
             }
         }
