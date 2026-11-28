@@ -36,14 +36,13 @@ jobs:
     name: Compute build version
     runs-on: ubuntu-latest
     if: >-
-      (github.event.action != 'edited' || github.event.changes.base != null) &&
-      (((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
       github.ref == 'refs/heads/preview')) ||
       (github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       !startsWith(github.head_ref, 'release-please--') &&
-      !contains(github.event.pull_request.labels.*.name, 'autorelease: pending')))
+      !contains(github.event.pull_request.labels.*.name, 'autorelease: pending'))
     outputs:
       base_version: ${{ steps.version.outputs.base_version }}
       version_name: ${{ steps.version.outputs.version_name }}
@@ -57,16 +56,16 @@ jobs:
         run: |
           BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
           SHORT_SHA=$(git rev-parse --short HEAD)
+          IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$BASE_VERSION"
           {
             echo "base_version=${BASE_VERSION}"
             echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
-            echo "version_code=$(date +%s)"
+            echo "version_code=$((V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH))"
           } >> "$GITHUB_OUTPUT"
 
   signing:
     name: Check signing configuration
     runs-on: ubuntu-latest
-    if: github.event.action != 'edited' || github.event.changes.base != null
     environment:
       name: ${{ (github.event_name == 'pull_request' || github.ref == 'refs/heads/preview') && 'preview' || 'production' }}
     outputs:
@@ -109,7 +108,6 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       needs.signing.outputs.available == 'true' &&
-      (github.event.action != 'edited' || github.event.changes.base != null) &&
       (((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
       github.ref == 'refs/heads/preview')) ||
@@ -124,24 +122,24 @@ jobs:
         id: variant
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "tasks=:app:assembleGmsDebug :app:bundleGmsDebug :app:assembleNogmsDebug" >> "$GITHUB_OUTPUT"
-            echo "apk_dirs=app/build/outputs/apk/gms/debug app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleStandardGmsDebug :app:bundleStandardGmsDebug :app:assembleStandardNogmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dirs=app/build/outputs/apk/standardGms/debug app/build/outputs/apk/standardNogms/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
-              echo "app/build/outputs/apk/gms/debug/*.apk"
-              echo "app/build/outputs/apk/nogms/debug/*.apk"
+              echo "app/build/outputs/apk/standardGms/debug/*.apk"
+              echo "app/build/outputs/apk/standardNogms/debug/*.apk"
               echo "app/build/outputs/bundle/**/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           else
-            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease :app:assembleNogmsRelease :app:assembleGmsDebug :app:bundleGmsDebug :app:assembleNogmsDebug" >> "$GITHUB_OUTPUT"
-            echo "apk_dirs=app/build/outputs/apk/gms/release app/build/outputs/apk/nogms/release app/build/outputs/apk/gms/debug app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleStandardGmsRelease :app:bundleStandardGmsRelease :app:assembleStandardNogmsRelease :app:assembleStandardGmsDebug :app:bundleStandardGmsDebug :app:assembleStandardNogmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dirs=app/build/outputs/apk/standardGms/release app/build/outputs/apk/standardNogms/release app/build/outputs/apk/standardGms/debug app/build/outputs/apk/standardNogms/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
-              echo "app/build/outputs/apk/gms/release/*.apk"
-              echo "app/build/outputs/apk/nogms/release/*.apk"
-              echo "app/build/outputs/apk/gms/debug/*.apk"
-              echo "app/build/outputs/apk/nogms/debug/*.apk"
+              echo "app/build/outputs/apk/standardGms/release/*.apk"
+              echo "app/build/outputs/apk/standardNogms/release/*.apk"
+              echo "app/build/outputs/apk/standardGms/debug/*.apk"
+              echo "app/build/outputs/apk/standardNogms/debug/*.apk"
               echo "app/build/outputs/bundle/**/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
@@ -184,11 +182,9 @@ jobs:
         env:
           SIGNING_KEY: ${{ runner.temp }}/android-release.jks
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
-          VERSION_NAME: ${{ needs.release_please.outputs.version_name }}
-          VERSION_CODE: ${{ needs.release_please.outputs.version_code }}
         run: |
           ./gradlew --no-daemon ${{ steps.variant.outputs.tasks }} \
-            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE" -Pdebuggable=false
+            -Pdebuggable=false
       - name: Verify signed APK and report
         run: |
           APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
@@ -233,23 +229,23 @@ jobs:
         id: variant
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "tasks=:app:assembleGmsDebug :app:assembleNogmsDebug" >> "$GITHUB_OUTPUT"
-            echo "apk_dirs=app/build/outputs/apk/gms/debug app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleStandardGmsDebug :app:assembleStandardNogmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dirs=app/build/outputs/apk/standardGms/debug app/build/outputs/apk/standardNogms/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
-              echo "app/build/outputs/apk/gms/debug/*.apk"
-              echo "app/build/outputs/apk/nogms/debug/*.apk"
+              echo "app/build/outputs/apk/standardGms/debug/*.apk"
+              echo "app/build/outputs/apk/standardNogms/debug/*.apk"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           else
-            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease :app:assembleNogmsRelease :app:assembleGmsDebug :app:assembleNogmsDebug" >> "$GITHUB_OUTPUT"
-            echo "apk_dirs=app/build/outputs/apk/gms/release app/build/outputs/apk/nogms/release app/build/outputs/apk/gms/debug app/build/outputs/apk/nogms/debug" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleStandardGmsRelease :app:bundleStandardGmsRelease :app:assembleStandardNogmsRelease :app:assembleStandardGmsDebug :app:assembleStandardNogmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dirs=app/build/outputs/apk/standardGms/release app/build/outputs/apk/standardNogms/release app/build/outputs/apk/standardGms/debug app/build/outputs/apk/standardNogms/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
-              echo "app/build/outputs/apk/gms/release/*.apk"
-              echo "app/build/outputs/apk/nogms/release/*.apk"
-              echo "app/build/outputs/apk/gms/debug/*.apk"
-              echo "app/build/outputs/apk/nogms/debug/*.apk"
+              echo "app/build/outputs/apk/standardGms/release/*.apk"
+              echo "app/build/outputs/apk/standardNogms/release/*.apk"
+              echo "app/build/outputs/apk/standardGms/debug/*.apk"
+              echo "app/build/outputs/apk/standardNogms/debug/*.apk"
               echo "app/build/outputs/bundle/**/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
@@ -260,9 +256,10 @@ jobs:
         run: |
           BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
           SHORT_SHA=$(git rev-parse --short HEAD)
+          IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$BASE_VERSION"
           {
             echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
-            echo "version_code=$(date +%s)"
+            echo "version_code=$((V_MAJOR * 10000 + V_MINOR * 100 + V_PATCH))"
           } >> "$GITHUB_OUTPUT"
 
       - name: Set up Java
@@ -283,12 +280,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build unsigned APK and AAB
-        env:
-          VERSION_NAME: ${{ steps.version.outputs.version_name }}
-          VERSION_CODE: ${{ steps.version.outputs.version_code }}
         run: |
           ./gradlew --no-daemon ${{ steps.variant.outputs.tasks }} \
-            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE" -Pdebuggable=false
+            -Pdebuggable=false
 
       - name: Verify APK signature
         run: |
