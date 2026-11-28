@@ -8,7 +8,10 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.w3c.dom.Element
 
@@ -33,6 +36,10 @@ abstract class GenerateLicensesTask : DefaultTask() {
 
     @get:Input
     abstract val fetchLicenseTexts: Property<Boolean>
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val artifactFiles: ListProperty<File>
 
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
@@ -443,6 +450,11 @@ androidComponents {
             gradleUserHome.set(gradle.gradleUserHomeDir.absolutePath)
             appVersion.set(appVersionName)
             fetchLicenseTexts.set(!isFdroid)
+            artifactFiles.set(
+                configurations.getByName("${variant.name}RuntimeClasspath")
+                    .incoming.artifacts.resolvedArtifacts
+                    .map { results -> results.map { result -> result.file } }
+            )
             outputDirectory.set(layout.buildDirectory.dir("generated/licenses/${variant.name}"))
         }
         variant.sources.java?.addGeneratedSourceDirectory(licensesTask, GenerateLicensesTask::outputDirectory)
