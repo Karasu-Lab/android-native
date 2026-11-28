@@ -79,7 +79,7 @@ jobs:
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "No signing key is available for this run. The signed build and the Google Play upload will be skipped."
+            echo "No signing key is available for this run. The signed build will be skipped."
           fi
 
   android-signed:
@@ -302,58 +302,6 @@ jobs:
           path: release-artifacts/**
           if-no-files-found: error
           retention-days: 14
-
-  google-play-release:
-    name: Release to Google Play
-    needs:
-      - android-signed
-      - release_please
-      - signing
-    runs-on: ubuntu-latest
-    if: >-
-      needs.signing.outputs.available == 'true' &&
-      github.event_name == 'push' &&
-      (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) ||
-      github.ref == 'refs/heads/preview')
-    concurrency:
-      group: google-play-release
-      cancel-in-progress: false
-    environment:
-      name: ${{ github.ref == 'refs/heads/preview' && 'preview' || 'production' }}
-    steps:
-      - name: Check out source
-        uses: actions/checkout@v7
-      - name: Determine bundle path
-        id: bundle
-        run: |
-          if [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "path=app/build/outputs/bundle/**/*.aab" >> "$GITHUB_OUTPUT"
-          else
-            echo "path=app/build/outputs/bundle/**/*.aab" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Download signed release bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: android-release-signed-${{ github.sha }}
-          path: app/build/outputs
-      - name: Decode Google Play Service Account Key
-        env:
-          IAM_PRIVATE_KEY: ${{ secrets.IAM_PRIVATE_KEY }}
-        run: |
-          tr -d ' \n\r' <<< '${{ secrets.IAM_PRIVATE_KEY }}' | base64 -d > ./service-account.json
-      - name: Prepare Google Play release notes
-        env:
-          BASE_VERSION: ${{ needs.release_please.outputs.base_version }}
-        run: node .github/workflows/scripts/extract-release-notes.mjs CHANGELOG.md
-      - name: Publish to Google Play
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJson: ./service-account.json
-          packageName: ${{ vars.PACKAGE_NAME }}
-          releaseFiles: ${{ steps.bundle.outputs.path }}
-          tracks: internal
-          releaseName: ${{ needs.release_please.outputs.version_name }}
-          whatsNewDirectory: distribution/whatsnew
 
   github-release-assets:
     name: Attach APK files to the GitHub Release
