@@ -1,0 +1,170 @@
+name: Publish to Google Play
+
+on:
+  push:
+    branches:
+      - main
+      - preview
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-to-google-play
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Compute build version
+    runs-on: ubuntu-latest
+    outputs:
+      base_version: ${{ steps.version.outputs.base_version }}
+      version_name: ${{ steps.version.outputs.version_name }}
+      version_code: ${{ steps.version.outputs.version_code }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Compute build version
+        id: version
+        run: |
+          BASE_VERSION=$(jq -r '.["."]' .release-please-manifest.json)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          {
+            echo "base_version=${BASE_VERSION}"
+            echo "version_name=${BASE_VERSION}-${SHORT_SHA}"
+            echo "version_code=$(date +%s)"
+          } >> "$GITHUB_OUTPUT"
+
+  playstore-signing:
+    name: Check Play Store signing configuration
+    runs-on: ubuntu-latest
+    outputs:
+      available: ${{ steps.check.outputs.available }}
+    steps:
+      - name: Check Play Store signing key
+        id: check
+        env:
+          SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          PLAYSTORE_SIGNING_ALIAS: ${{ vars.PLAYSTORE_SIGNING_ALIAS }}
+          PLAYSTORE_SIGNING_PASS: ${{ secrets.PLAYSTORE_SIGNING_PASS }}
+        run: |
+          if [ -n "$SIGNING_KEY_BASE64" ] || [ -n "$SIGNING_KEY" ]; then
+            KEYSTORE_AVAILABLE=true
+          else
+            KEYSTORE_AVAILABLE=false
+          fi
+          if [ "$KEYSTORE_AVAILABLE" = "true" ] && [ -n "$PLAYSTORE_SIGNING_ALIAS" ] && [ -n "$PLAYSTORE_SIGNING_PASS" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "The repository signing key, the repository variable PLAYSTORE_SIGNING_ALIAS, or the repository secret PLAYSTORE_SIGNING_PASS is not available for this run. The Google Play upload will be skipped."
+          fi
+
+  publish:
+    name: Build and publish to Google Play
+    needs:
+      - version
+      - playstore-signing
+    runs-on: ubuntu-latest
+    if: needs.playstore-signing.outputs.available == 'true'
+    environment:
+      name: ${{ github.ref == 'refs/heads/preview' && 'preview' || 'production' }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Determine build variant
+        id: variant
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/preview" ]; then
+            echo "tasks=:app:assembleGmsDebug :app:bundleGmsDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dir=app/build/outputs/apk/gms/debug" >> "$GITHUB_OUTPUT"
+            echo "bundle_path=app/build/outputs/bundle/gmsDebug/app-gms-debug.aab" >> "$GITHUB_OUTPUT"
+          else
+            echo "tasks=:app:assembleGmsRelease :app:bundleGmsRelease" >> "$GITHUB_OUTPUT"
+            echo "apk_dir=app/build/outputs/apk/gms/release" >> "$GITHUB_OUTPUT"
+            echo "bundle_path=app/build/outputs/bundle/gmsRelease/app-gms-release.aab" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Prepare Play Store signing key
+        env:
+          PLAYSTORE_SIGNING_ALIAS: ${{ vars.PLAYSTORE_SIGNING_ALIAS }}
+          PLAYSTORE_SIGNING_PASS: ${{ secrets.PLAYSTORE_SIGNING_PASS }}
+        run: |
+          tr -d ' \n\r' <<< '${{ secrets.SIGNING_KEY_BASE64 || secrets.SIGNING_KEY }}' | base64 -d > ./.keystore
+          STORE_PASS=$(tr -d '\n\r' <<< "$PLAYSTORE_SIGNING_PASS")
+          KEY_ALIAS=$(tr -d '\n\r' <<< "$PLAYSTORE_SIGNING_ALIAS")
+          if ! keytool -list -keystore ./.keystore -storepass "${STORE_PASS}" -alias "${KEY_ALIAS}" > /dev/null 2>&1; then
+            echo "::error::The alias '${KEY_ALIAS}' from the repository variable PLAYSTORE_SIGNING_ALIAS was not found in the signing key, or the repository secret PLAYSTORE_SIGNING_PASS does not match its passphrase."
+            exit 1
+          fi
+          {
+            echo "signing.storePassword=${STORE_PASS}"
+            echo "signing.keyPassword=${STORE_PASS}"
+            echo "signing.Alias=${KEY_ALIAS}"
+          } > ./local.properties
+          keytool -list -v -keystore ./.keystore -storepass "${STORE_PASS}" -alias "${KEY_ALIAS}"
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+
+      - name: Install Android 17 preview SDK
+        run: sdkmanager --channel=3 --install "platforms;android-37.1" "build-tools;37.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build with the Play Store signing key
+        env:
+          VERSION_NAME: ${{ needs.version.outputs.version_name }}
+          VERSION_CODE: ${{ needs.version.outputs.version_code }}
+        run: |
+          ./gradlew --no-daemon ${{ steps.variant.outputs.tasks }} \
+            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE" -Pdebuggable=false
+
+      - name: Verify APK signature and report
+        run: |
+          APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
+          APK=$(ls ${{ steps.variant.outputs.apk_dir }}/*.apk | head -n1)
+          REPORT=${{ steps.variant.outputs.apk_dir }}/apksigner-report.txt
+          set +e
+          "$APKSIGNER" verify --verbose --print-certs "$APK" > "$REPORT" 2>&1
+          STATUS=$?
+          set -e
+          {
+            echo "## APK signature verification"
+            echo '```'
+            cat "$REPORT"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$STATUS"
+
+      - name: Decode Google Play Service Account Key
+        run: |
+          tr -d ' \n\r' <<< '${{ secrets.IAM_PRIVATE_KEY }}' | base64 -d > ./service-account.json
+
+      - name: Prepare Google Play release notes
+        env:
+          BASE_VERSION: ${{ needs.version.outputs.base_version }}
+        run: node .github/workflows/scripts/extract-release-notes.mjs CHANGELOG.md
+
+      - name: Publish to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: ./service-account.json
+          packageName: ${{ vars.PACKAGE_NAME }}
+          releaseFiles: ${{ steps.variant.outputs.bundle_path }}
+          tracks: internal
+          releaseName: ${{ needs.version.outputs.version_name }}
+          whatsNewDirectory: distribution/whatsnew
