@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.10.5](https://github.com/Karasu-Lab/android-native/compare/v1.10.4...v1.10.5) (2026-11-28)
+
+
+### Bug Fixes
+
+* add an APK signature verification step to the unsigned build ([6e49997](https://github.com/Karasu-Lab/android-native/commit/6e4999778b718601d8f378aa0584b0ff46be1f6f))
+* publish to Google Play in a single step ([d663149](https://github.com/Karasu-Lab/android-native/commit/d663149239e0627b2e6a8f67ef51b9e79b082f94))
+* read the signing alias from environment variables ([af8f1da](https://github.com/Karasu-Lab/android-native/commit/af8f1da02380690483ecc9ff74e5c6433f6c1899))
+
 ## [1.10.4](https://github.com/Karasu-Lab/android-native/compare/v1.10.3...v1.10.4) (2026-11-28)
 
 
