@@ -83,7 +83,7 @@ jobs:
           fi
 
   android-signed:
-    name: Build signed release APK and AAB
+    name: Build signed APK and AAB
     needs:
       - release_please
       - signing
@@ -100,6 +100,28 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v7
+      - name: Determine build variant
+        id: variant
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/preview" ]; then
+            echo "tasks=:app:assembleDebug :app:bundleDebug" >> "$GITHUB_OUTPUT"
+            echo "apk_dir=app/build/outputs/apk/debug" >> "$GITHUB_OUTPUT"
+            {
+              echo "upload_paths<<EOF"
+              echo "app/build/outputs/apk/debug/*.apk"
+              echo "app/build/outputs/bundle/debug/*.aab"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "tasks=:app:assembleRelease :app:bundleRelease" >> "$GITHUB_OUTPUT"
+            echo "apk_dir=app/build/outputs/apk/release" >> "$GITHUB_OUTPUT"
+            {
+              echo "upload_paths<<EOF"
+              echo "app/build/outputs/apk/release/*.apk"
+              echo "app/build/outputs/bundle/release/*.aab"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
       - name: Write google-services.json for this variant
         env:
           GOOGLE_SERVICE_JSON: ${{ vars.GOOGLE_SERVICE_JSON }}
@@ -143,20 +165,20 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build signed release APK and AAB
+      - name: Build signed APK and AAB
         env:
           SIGNING_KEY: ${{ runner.temp }}/android-release.jks
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
           VERSION_NAME: ${{ needs.release_please.outputs.version_name }}
           VERSION_CODE: ${{ needs.release_please.outputs.version_code }}
         run: |
-          ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease \
+          ./gradlew --no-daemon ${{ steps.variant.outputs.tasks }} \
             -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
       - name: Verify signed APK and report
         run: |
           APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
-          APK=$(ls app/build/outputs/apk/release/*.apk | head -n1)
-          REPORT=app/build/outputs/apk/release/apksigner-report.txt
+          APK=$(ls ${{ steps.variant.outputs.apk_dir }}/*.apk | head -n1)
+          REPORT=${{ steps.variant.outputs.apk_dir }}/apksigner-report.txt
           set +e
           "$APKSIGNER" verify --verbose --print-certs "$APK" > "$REPORT" 2>&1
           STATUS=$?
@@ -168,24 +190,42 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           exit "$STATUS"
-      - name: Upload signed release APK and AAB
+      - name: Upload signed APK and AAB
         uses: actions/upload-artifact@v7
         with:
           name: android-release-signed-${{ github.sha }}
-          path: |
-            app/build/outputs/apk/release/*.apk
-            app/build/outputs/bundle/release/*.aab
+          path: ${{ steps.variant.outputs.upload_paths }}
           if-no-files-found: error
           retention-days: 14
 
   android-unsigned:
-    name: Build unsigned release APK and AAB
+    name: Build unsigned APK and AAB
     runs-on: ubuntu-latest
     environment:
       name: ${{ (github.event_name == 'pull_request' || github.ref == 'refs/heads/preview') && 'preview' || 'production' }}
     steps:
       - name: Check out source
         uses: actions/checkout@v7
+
+      - name: Determine build variant
+        id: variant
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/preview" ]; then
+            echo "tasks=:app:assembleDebug" >> "$GITHUB_OUTPUT"
+            {
+              echo "upload_paths<<EOF"
+              echo "app/build/outputs/apk/debug/*.apk"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "tasks=:app:assembleRelease :app:bundleRelease" >> "$GITHUB_OUTPUT"
+            {
+              echo "upload_paths<<EOF"
+              echo "app/build/outputs/apk/release/*.apk"
+              echo "app/build/outputs/bundle/release/*.aab"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Write google-services.json for this variant
         env:
@@ -223,21 +263,19 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build unsigned release APK and AAB
+      - name: Build unsigned APK and AAB
         env:
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
         run: |
-          ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease \
+          ./gradlew --no-daemon ${{ steps.variant.outputs.tasks }} \
             -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
 
-      - name: Upload unsigned release APK and AAB
+      - name: Upload unsigned APK and AAB
         uses: actions/upload-artifact@v7
         with:
           name: android-release-unsigned-${{ github.sha }}
-          path: |
-            app/build/outputs/apk/release/*.apk
-            app/build/outputs/bundle/release/*.aab
+          path: ${{ steps.variant.outputs.upload_paths }}
           if-no-files-found: error
           retention-days: 14
 
@@ -286,6 +324,14 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v7
+      - name: Determine bundle path
+        id: bundle
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/preview" ]; then
+            echo "path=app/build/outputs/bundle/debug/*.aab" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=app/build/outputs/bundle/release/*.aab" >> "$GITHUB_OUTPUT"
+          fi
       - name: Download signed release bundle
         uses: actions/download-artifact@v4
         with:
@@ -306,7 +352,7 @@ jobs:
         with:
           serviceAccountJson: ./service-account.json
           packageName: ${{ vars.PACKAGE_NAME }}
-          releaseFiles: app/build/outputs/bundle/release/*.aab
+          releaseFiles: ${{ steps.bundle.outputs.path }}
           tracks: internal
           releaseName: ${{ needs.release_please.outputs.version_name }}
           whatsNewDirectory: distribution/whatsnew
@@ -317,7 +363,7 @@ jobs:
         with:
           serviceAccountJson: ./service-account.json
           packageName: ${{ vars.PACKAGE_NAME }}
-          releaseFiles: app/build/outputs/bundle/release/*.aab
+          releaseFiles: ${{ steps.bundle.outputs.path }}
           tracks: internal
           releaseName: ${{ needs.release_please.outputs.version_name }}
           whatsNewDirectory: distribution/whatsnew
