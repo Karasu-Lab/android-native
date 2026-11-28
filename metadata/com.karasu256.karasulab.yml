@@ -18,7 +18,8 @@ Builds:
     gradle:
       - nogms
     rm:
-      - app/google-services.json
+      - app/src/gmsDebug/google-services.json
+      - app/src/gmsRelease/google-services.json
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags

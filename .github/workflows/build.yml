@@ -122,14 +122,6 @@ jobs:
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           fi
-      - name: Write google-services.json for this variant
-        env:
-          GOOGLE_SERVICE_JSON: ${{ vars.GOOGLE_SERVICE_JSON }}
-        run: |
-          if [ -n "${GOOGLE_SERVICE_JSON}" ]; then
-            printf '%s' "${GOOGLE_SERVICE_JSON}" > app/google-services.json
-            jq -e . app/google-services.json > /dev/null
-          fi
       - name: Prepare Android signing key
         env:
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
@@ -226,15 +218,6 @@ jobs:
               echo "app/build/outputs/bundle/**/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Write google-services.json for this variant
-        env:
-          GOOGLE_SERVICE_JSON: ${{ vars.GOOGLE_SERVICE_JSON }}
-        run: |
-          if [ -n "${GOOGLE_SERVICE_JSON}" ]; then
-            printf '%s' "${GOOGLE_SERVICE_JSON}" > app/google-services.json
-            jq -e . app/google-services.json > /dev/null
           fi
 
       - name: Compute build version

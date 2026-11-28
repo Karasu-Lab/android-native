@@ -16,15 +16,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Write google-services.json
-        env:
-          GOOGLE_SERVICE_JSON: ${{ vars.GOOGLE_SERVICE_JSON }}
-        run: |
-          if [ -n "${GOOGLE_SERVICE_JSON}" ]; then
-            printf '%s' "${GOOGLE_SERVICE_JSON}" > app/google-services.json
-            jq -e . app/google-services.json > /dev/null
-          fi
-
       - name: Prepare signing key
         env:
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}

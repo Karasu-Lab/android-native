@@ -24,9 +24,6 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v7
 
-      - name: Remove google-services.json
-        run: rm -f app/google-services.json
-
       - name: Compute build version
         id: version
         run: |
