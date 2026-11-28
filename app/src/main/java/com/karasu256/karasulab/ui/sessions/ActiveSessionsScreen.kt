@@ -84,7 +84,7 @@ fun ActiveSessionsScreen(
                     item {
                         SessionItem(
                             session = session,
-                            revoking = state.revokingId == session.id,
+                            revoking = session.id in state.revokingIds,
                             onRevoke = { viewModel.askRevoke(session) },
                         )
                     }
