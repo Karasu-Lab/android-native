@@ -44,12 +44,16 @@ are enabled in local builds only, so a local build uses a
 
 The version is derived from the Release Please manifest
 (`.release-please-manifest.json`). The version code is
-`2000000000 + major * 10000 + minor * 100 + patch`. The offset keeps
-every version code above the timestamp-based version codes that were
-published to Google Play before this scheme was introduced, while
-staying below the maximum version code of 2100000000. Every variant
-is named `<version>-<variant>-<short commit>+<version code>`, for
-example `1.15.0-fdroidNogmsRelease-0123abc+2000011500`.
+`2000000000 + commit count * 1000 + (major * 10000 + minor * 100 + patch) % 1000`,
+where the commit count is the number of commits reachable from HEAD.
+The offset keeps every version code above the timestamp-based version
+codes that were published to Google Play before this scheme was
+introduced, while staying below the maximum version code of
+2100000000. The commit count makes the version code increase with
+every commit, so the stores can deliver an update for every build,
+including several builds of the same Release Please version. Every
+variant is named `<version>-<variant>-<short commit>+<version code>`,
+for example `1.16.1-fdroidNogmsRelease-0123abc+2000330601`.
 
 Build and test the standard gms debug variant with Gradle in CI:
 
