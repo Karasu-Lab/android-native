@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.14.1](https://github.com/Karasu-Lab/android-native/compare/v1.14.0...v1.14.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* Complete Google sign-in on the signing-in screen ([2fcfdd6](https://github.com/Karasu-Lab/android-native/commit/2fcfdd63d53d8d7a6b5c2452527fc91311995e17))
+* Show the signing-in screen as a sign-in step ([50fa30f](https://github.com/Karasu-Lab/android-native/commit/50fa30f2a7a6277dc2843f511295497b22252aeb))
+
 ## [1.14.0](https://github.com/Karasu-Lab/android-native/compare/v1.13.1...v1.14.0) (2026-11-28)
 
 
