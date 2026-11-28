@@ -1,6 +1,8 @@
 package com.karasu256.karasulab.data
 
 import android.content.Context
+import com.russhwolf.settings.Settings
+import com.russhwolf.settings.SharedPreferencesSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,17 +14,18 @@ import javax.inject.Singleton
 class DeveloperOptionsStore @Inject constructor(
     @ApplicationContext context: Context,
 ) {
-    private val preferences = context.getSharedPreferences("developer_options", Context.MODE_PRIVATE)
+    private val settings: Settings = SharedPreferencesSettings.Factory(context).create(SETTINGS_NAME)
 
-    private val _enabled = MutableStateFlow(preferences.getBoolean(ENABLED_KEY, false))
+    private val _enabled = MutableStateFlow(settings.getBoolean(ENABLED_KEY, false))
     val enabled: StateFlow<Boolean> = _enabled.asStateFlow()
 
     fun setEnabled(enabled: Boolean) {
-        preferences.edit().putBoolean(ENABLED_KEY, enabled).apply()
+        settings.putBoolean(ENABLED_KEY, enabled)
         _enabled.value = enabled
     }
 
     companion object {
+        private const val SETTINGS_NAME = "developer_options"
         private const val ENABLED_KEY = "enabled"
     }
 }
