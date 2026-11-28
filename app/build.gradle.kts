@@ -196,6 +196,8 @@ val localProperties = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 
+val isCiBuild = System.getenv("CI") == "true"
+
 val appVersionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
 val appVersionName = project.findProperty("versionName")?.toString() ?: "1.0"
 
@@ -266,7 +268,9 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix = ".debug"
+            if (!isCiBuild) {
+                applicationIdSuffix = ".debug"
+            }
             isDebuggable = (project.findProperty("debuggable") as String?)?.toBoolean() ?: true
             buildConfigField("String", "RELEASE_CHANNEL", "\"internal-test\"")
             buildConfigField("String", "API_HOST", "\"dev-api.karasu256.com\"")
