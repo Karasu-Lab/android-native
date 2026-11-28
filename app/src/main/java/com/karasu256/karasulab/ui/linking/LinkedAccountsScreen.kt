@@ -48,6 +48,7 @@ import com.karasu256.karasulab.ui.component.ProviderIcon
 import com.karasu256.karasulab.ui.component.SettingsGroup
 import com.karasu256.karasulab.ui.component.SettingsItem
 import com.karasu256.karasulab.ui.component.UserAvatar
+import com.karasu256.karasulab.ui.providers.OAuthProvidersViewModel
 import com.karasu256.karasulab.ui.settings.SettingsScaffold
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -58,8 +59,10 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 fun LinkedAccountsScreen(
     navigator: DestinationsNavigator,
     viewModel: LinkedAccountsViewModel = hiltViewModel(),
+    providersViewModel: OAuthProvidersViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val providersState by providersViewModel.uiState.collectAsStateWithLifecycle()
     val providers = state.clients
     val activity = LocalActivity.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -67,6 +70,10 @@ fun LinkedAccountsScreen(
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.load()
+        providersViewModel.load("link")
+    }
+    LaunchedEffect(providersState.providers) {
+        viewModel.updateProviders(providersState.providers)
     }
     LaunchedEffect(viewModel) {
         viewModel.openBrowser.collect { CustomTabsIntent.Builder().build().launchUrl(checkNotNull(activity), it.toUri()) }
@@ -84,10 +91,13 @@ fun LinkedAccountsScreen(
         loading = state.loading,
         snackbarHostState = snackbarHostState,
     ) {
-        if (state.loadFailed) {
+        if (state.loadFailed || providersState.error != null) {
             ErrorRetry(
                 message = stringResource(R.string.load_error),
-                onRetry = { viewModel.load() },
+                onRetry = {
+                    viewModel.load()
+                    providersViewModel.load("link")
+                },
             )
         }
         SettingsGroup {
@@ -108,7 +118,7 @@ fun LinkedAccountsScreen(
                             } else if (profile?.iconUrl != null) {
                                 UserAvatar(id = provider.providerId, label = provider.label, imageUrl = profile.iconUrl)
                             } else {
-                                val oauthProvider = state.providers.firstOrNull { it.id == provider.providerId }
+                                val oauthProvider = providersState.providers.firstOrNull { it.id == provider.providerId }
                                 if (oauthProvider != null) {
                                     ProviderIcon(provider = oauthProvider)
                                 } else {
