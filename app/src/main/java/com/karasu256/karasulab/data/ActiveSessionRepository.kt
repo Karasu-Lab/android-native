@@ -34,7 +34,7 @@ class ActiveSessionRepository @Inject constructor(
         return true
     }
 
-    private fun isCurrent(token: String): Boolean {
+    private suspend fun isCurrent(token: String): Boolean {
         val currentToken = URLDecoder.decode(sessionCookie.value(), "UTF-8").substringBefore('.')
         return token == currentToken
     }
