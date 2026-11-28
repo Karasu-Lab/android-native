@@ -137,7 +137,7 @@ jobs:
           VERSION_NAME: ${{ needs.version.outputs.version_name }}
           VERSION_CODE: ${{ needs.version.outputs.version_code }}
         run: |
-          ./gradlew --no-daemon ${{ steps.variant.outputs.tasks }} \
+          ./gradlew --no-daemon --offline ${{ steps.variant.outputs.tasks }} \
             -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE" -Pdebuggable=false
 
       - name: Verify APK signature and report
