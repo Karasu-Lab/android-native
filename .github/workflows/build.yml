@@ -64,16 +64,17 @@ jobs:
   signing:
     name: Check signing configuration
     runs-on: ubuntu-latest
-    environment:
-      name: ${{ (github.event_name == 'pull_request' || github.ref == 'refs/heads/preview') && 'preview' || 'production' }}
     outputs:
       available: ${{ steps.check.outputs.available }}
+      key_base64: ${{ steps.check.outputs.key_base64 }}
+      store_password: ${{ steps.check.outputs.store_password }}
     steps:
       - name: Check signing key
         id: check
         env:
           SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
         run: |
           if [ -n "$SIGNING_KEY_BASE64" ] || [ -n "$SIGNING_KEY" ]; then
             echo "available=true" >> "$GITHUB_OUTPUT"
@@ -81,6 +82,16 @@ jobs:
             echo "available=false" >> "$GITHUB_OUTPUT"
             echo "No signing key is available for this run. The signed build and the Google Play upload will be skipped."
           fi
+          {
+            echo "key_base64<<EOF"
+            printf '%s' "${SIGNING_KEY_BASE64:-$SIGNING_KEY}"
+            echo
+            echo "EOF"
+            echo "store_password<<EOF"
+            printf '%s' "$SIGNING_STORE_PASSWORD"
+            echo
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
   android-signed:
     name: Build signed APK and AAB
@@ -133,12 +144,12 @@ jobs:
       - name: Prepare Android signing key
         env:
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ needs.signing.outputs.store_password }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           SIGNING_ALIAS: ${{ secrets.SIGNING_ALIAS }}
           ALIAS: ${{ secrets.ALIAS }}
         run: |
-          tr -d ' \n\r' <<< '${{ secrets.SIGNING_KEY_BASE64 || secrets.SIGNING_KEY }}' | base64 -d > ./.keystore
+          tr -d ' \n\r' <<< '${{ needs.signing.outputs.key_base64 }}' | base64 -d > ./.keystore
           STORE_PASS=$(tr -d '\n\r' <<< "${SIGNING_STORE_PASSWORD:-$SIGNING_PASS}")
           KEY_PASS=$(tr -d '\n\r' <<< "${SIGNING_KEY_PASSWORD:-$STORE_PASS}")
           DETECTED_ALIAS=$(keytool -list -keystore ./.keystore -storepass "${STORE_PASS}" 2>/dev/null | grep "Alias name:" | head -n1 | sed 's/.*Alias name: *//' | tr -d ' \r')
