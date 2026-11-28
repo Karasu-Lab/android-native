@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.2](https://github.com/Karasu-Lab/android-native/compare/v1.12.1...v1.12.2) (2026-11-28)
+
+
+### Bug Fixes
+
+* open the Play Store signing key with the repository store password ([6b3ae5f](https://github.com/Karasu-Lab/android-native/commit/6b3ae5f6da2eb23533bdca264d48c8590a8c1302))
+
 ## [1.12.1](https://github.com/Karasu-Lab/android-native/compare/v1.12.0...v1.12.1) (2026-11-28)
 
 
