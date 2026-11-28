@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/Karasu-Lab/android-native/compare/v1.13.0...v1.13.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* Build for Google Play publishing online ([667a606](https://github.com/Karasu-Lab/android-native/commit/667a606258cec33d0d8bd086014d6ad09e0bce02))
+
 ## [1.13.0](https://github.com/Karasu-Lab/android-native/compare/v1.12.3...v1.13.0) (2026-11-28)
 
 
