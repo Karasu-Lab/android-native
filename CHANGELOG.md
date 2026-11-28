@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/Karasu-Lab/android-native/compare/v1.9.0...v1.9.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* drive the linked accounts placeholder icons from the shared provider catalog ([8615a09](https://github.com/Karasu-Lab/android-native/commit/8615a09d2e3c88f6dfd26e6824e5ea9c138a7ead))
+
 ## [1.9.0](https://github.com/Karasu-Lab/android-native/compare/v1.8.0...v1.9.0) (2026-11-27)
 
 
