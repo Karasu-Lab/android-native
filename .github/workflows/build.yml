@@ -104,11 +104,12 @@ jobs:
         id: variant
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "tasks=:app:assembleDebug" >> "$GITHUB_OUTPUT"
+            echo "tasks=:app:assembleDebug :app:bundleDebug" >> "$GITHUB_OUTPUT"
             echo "apk_dir=app/build/outputs/apk/debug" >> "$GITHUB_OUTPUT"
             {
               echo "upload_paths<<EOF"
               echo "app/build/outputs/apk/debug/*.apk"
+              echo "app/build/outputs/bundle/debug/*.aab"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           else
@@ -311,12 +312,12 @@ jobs:
     if: >-
       needs.signing.outputs.available == 'true' &&
       github.event_name == 'push' &&
-      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+      github.ref == 'refs/heads/preview'
     concurrency:
       group: google-play-release
       cancel-in-progress: false
     environment:
-      name: production
+      name: preview
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -340,7 +341,7 @@ jobs:
         with:
           serviceAccountJson: ./service-account.json
           packageName: ${{ vars.PACKAGE_NAME }}
-          releaseFiles: app/build/outputs/bundle/release/*.aab
+          releaseFiles: app/build/outputs/bundle/debug/*.aab
           tracks: internal
           releaseName: ${{ needs.release_please.outputs.version_name }}
           whatsNewDirectory: distribution/whatsnew
@@ -351,7 +352,7 @@ jobs:
         with:
           serviceAccountJson: ./service-account.json
           packageName: ${{ vars.PACKAGE_NAME }}
-          releaseFiles: app/build/outputs/bundle/release/*.aab
+          releaseFiles: app/build/outputs/bundle/debug/*.aab
           tracks: internal
           releaseName: ${{ needs.release_please.outputs.version_name }}
           whatsNewDirectory: distribution/whatsnew
