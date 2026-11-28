@@ -15,7 +15,6 @@ class ActiveSessionRepository @Inject constructor(
     private val sessionCookie: ActiveSessionCookie,
 ) {
     suspend fun list(): List<ActiveSession> {
-        val currentToken = URLDecoder.decode(sessionCookie.value(), "UTF-8").substringBefore('.')
         return apiCall { authApi.listSessions(sessionCookie.header()) }.map {
             ActiveSession(
                 id = it.id,
@@ -23,13 +22,20 @@ class ActiveSessionRepository @Inject constructor(
                 createdAt = it.createdAt,
                 ipAddress = it.ipAddress,
                 userAgent = it.userAgent,
-                current = it.token == currentToken,
+                current = isCurrent(it.token),
             )
         }
     }
 
-    suspend fun revoke(session: ActiveSession) {
+    suspend fun revoke(session: ActiveSession): Boolean {
+        if (isCurrent(session.token)) return false
         authApi.revokeSession(sessionCookie.header(), RevokeSessionRequest(session.token))
             .ensureSuccess()
+        return true
+    }
+
+    private suspend fun isCurrent(token: String): Boolean {
+        val currentToken = URLDecoder.decode(sessionCookie.value(), "UTF-8").substringBefore('.')
+        return token == currentToken
     }
 }

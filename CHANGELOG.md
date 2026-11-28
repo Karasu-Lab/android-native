@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.11.0](https://github.com/Karasu-Lab/android-native/compare/v1.10.5...v1.11.0) (2026-11-28)
+
+
+### Features
+
+* add the nogms flavor for F-Droid and a licenses screen ([6f2e3b5](https://github.com/Karasu-Lab/android-native/commit/6f2e3b51727fff39cb12f9939e71d2f38cf35e8a))
+
+
+### Bug Fixes
+
+* build the debug variant without a debugger on CI ([88186f0](https://github.com/Karasu-Lab/android-native/commit/88186f0af492ac95f3e48a6ac9993704693a82dc))
+* make the license generation task configuration cache compatible ([5ac0615](https://github.com/Karasu-Lab/android-native/commit/5ac06156118b362f7ee52df93db1b341a63bb134))
+* place google-services.json in the variant source sets ([944d2cd](https://github.com/Karasu-Lab/android-native/commit/944d2cd7dc72de83c2295103188095273c864874))
+* use the flavor output paths in the build workflows ([3370695](https://github.com/Karasu-Lab/android-native/commit/3370695b10717f1e2694d005a619427e980b6dd3))
+
+## [1.10.5](https://github.com/Karasu-Lab/android-native/compare/v1.10.4...v1.10.5) (2026-11-28)
+
+
+### Bug Fixes
+
+* add an APK signature verification step to the unsigned build ([6e49997](https://github.com/Karasu-Lab/android-native/commit/6e4999778b718601d8f378aa0584b0ff46be1f6f))
+* publish to Google Play in a single step ([d663149](https://github.com/Karasu-Lab/android-native/commit/d663149239e0627b2e6a8f67ef51b9e79b082f94))
+* read the signing alias from environment variables ([af8f1da](https://github.com/Karasu-Lab/android-native/commit/af8f1da02380690483ecc9ff74e5c6433f6c1899))
+
+## [1.10.4](https://github.com/Karasu-Lab/android-native/compare/v1.10.3...v1.10.4) (2026-11-28)
+
+
+### Bug Fixes
+
+* make the current session check a suspend function ([7d15392](https://github.com/Karasu-Lab/android-native/commit/7d15392a21736dec1ced265ec9cf5a27667ba140))
+* revoke active sessions in parallel ([1056073](https://github.com/Karasu-Lab/android-native/commit/1056073c109e0a3266d0fa1ebce634f1e9a80071))
+
 ## [1.10.3](https://github.com/Karasu-Lab/android-native/compare/v1.10.2...v1.10.3) (2026-11-28)
 
 

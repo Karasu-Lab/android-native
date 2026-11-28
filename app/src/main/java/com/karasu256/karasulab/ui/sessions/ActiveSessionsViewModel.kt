@@ -20,7 +20,7 @@ data class ActiveSessionsUiState(
     val loadFailed: Boolean = false,
     val sessions: List<ActiveSession> = emptyList(),
     val pendingRevoke: ActiveSession? = null,
-    val revokingId: String? = null,
+    val revokingIds: Set<String> = emptySet(),
     val message: UiText? = null,
 )
 
@@ -52,20 +52,25 @@ class ActiveSessionsViewModel @Inject constructor(
 
     fun revoke() {
         val session = _uiState.value.pendingRevoke ?: return
-        if (session.current) return
-        _uiState.update { it.copy(pendingRevoke = null, revokingId = session.id) }
+        if (session.id in _uiState.value.revokingIds) {
+            _uiState.update { it.copy(pendingRevoke = null) }
+            return
+        }
+        _uiState.update { it.copy(pendingRevoke = null, revokingIds = it.revokingIds + session.id) }
         viewModelScope.launch {
             attempt { repository.revoke(session) }
-                .onSuccess {
-                    _uiState.update {
-                        it.copy(
-                            sessions = it.sessions.filterNot { existing -> existing.id == session.id },
-                            message = UiText(R.string.active_sessions_revoked),
-                        )
+                .onSuccess { revoked ->
+                    if (revoked) {
+                        _uiState.update {
+                            it.copy(
+                                sessions = it.sessions.filterNot { existing -> existing.id == session.id },
+                                message = UiText(R.string.active_sessions_revoked),
+                            )
+                        }
                     }
                 }
                 .onFailure { _uiState.update { it.copy(message = UiText(R.string.error_unknown)) } }
-            _uiState.update { it.copy(revokingId = null) }
+            _uiState.update { it.copy(revokingIds = it.revokingIds - session.id) }
         }
     }
 }

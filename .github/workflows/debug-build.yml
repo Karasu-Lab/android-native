@@ -16,28 +16,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Write google-services.json
-        env:
-          GOOGLE_SERVICE_JSON: ${{ vars.GOOGLE_SERVICE_JSON }}
-        run: |
-          if [ -n "${GOOGLE_SERVICE_JSON}" ]; then
-            printf '%s' "${GOOGLE_SERVICE_JSON}" > app/google-services.json
-            jq -e . app/google-services.json > /dev/null
-          fi
-
       - name: Prepare signing key
         env:
           SIGNING_PASS: ${{ secrets.SIGNING_PASS }}
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-          SIGNING_ALIAS: ${{ secrets.SIGNING_ALIAS }}
-          ALIAS: ${{ secrets.ALIAS }}
+          SIGNING_ALIAS: ${{ vars.SIGNING_ALIAS }}
         run: |
           tr -d ' \n\r' <<< '${{ secrets.SIGNING_KEY_BASE64 || secrets.SIGNING_KEY }}' | base64 -d > ./.keystore
           STORE_PASS=$(tr -d '\n\r' <<< "${SIGNING_STORE_PASSWORD:-$SIGNING_PASS}")
           KEY_PASS=$(tr -d '\n\r' <<< "${SIGNING_KEY_PASSWORD:-$STORE_PASS}")
           DETECTED_ALIAS=$(keytool -list -keystore ./.keystore -storepass "${STORE_PASS}" 2>/dev/null | grep "Alias name:" | head -n1 | sed 's/.*Alias name: *//' | tr -d ' \r')
-          KEY_ALIAS=$(tr -d '\n\r' <<< "${SIGNING_ALIAS:-${ALIAS:-${DETECTED_ALIAS:-release}}}")
+          KEY_ALIAS=$(tr -d '\n\r' <<< "${SIGNING_ALIAS:-${DETECTED_ALIAS:-release}}")
           {
             echo "signing.storePassword=${STORE_PASS}"
             echo "signing.keyPassword=${KEY_PASS}"
@@ -77,14 +67,14 @@ jobs:
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
         run: |
-          ./gradlew --no-daemon :app:assembleDebug \
-            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+          ./gradlew --no-daemon :app:assembleGmsDebug \
+            -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE" -Pdebuggable=false
 
       - name: Verify APK signature
         run: |
           APKSIGNER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools/37.0.0/apksigner"
-          APK=$(ls app/build/outputs/apk/debug/*.apk | head -n1)
-          REPORT=app/build/outputs/apk/debug/apksigner-report.txt
+          APK=$(ls app/build/outputs/apk/gms/debug/*.apk | head -n1)
+          REPORT=app/build/outputs/apk/gms/debug/apksigner-report.txt
           set +e
           "$APKSIGNER" verify --verbose --print-certs "$APK" > "$REPORT" 2>&1
           STATUS=$?
@@ -102,6 +92,6 @@ jobs:
         with:
           name: android-debug-signed-${{ github.sha }}
           path: |
-            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/gms/debug/*.apk
           if-no-files-found: error
           retention-days: 14

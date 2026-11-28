@@ -1,5 +1,6 @@
 package com.karasu256.karasulab.auth
 
+import com.karasu256.karasulab.BuildConfig
 import com.karasu256.karasulab.data.AuthRepository
 import com.karasu256.karasulab.data.LinkedProviderRepository
 
@@ -25,7 +26,7 @@ open class ProviderLinkFlow(
     companion object {
         fun forProvider(providerId: String, authRepository: AuthRepository, linkedProviderRepository: LinkedProviderRepository): ProviderLinkFlow =
             when (providerId) {
-                "google" -> GoogleLinkFlow(authRepository, linkedProviderRepository)
+                "google" if BuildConfig.GMS_AVAILABLE -> GoogleLinkFlow(authRepository, linkedProviderRepository)
                 "minecraft" -> MinecraftLinkFlow(authRepository, linkedProviderRepository)
                 else -> ProviderLinkFlow(authRepository, linkedProviderRepository)
             }

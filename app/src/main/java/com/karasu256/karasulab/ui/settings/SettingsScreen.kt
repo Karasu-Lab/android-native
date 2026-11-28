@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Security
@@ -41,6 +42,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ActiveSessionsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.AuthorizedAppsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.DebugScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.LicensesScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.LinkedAccountsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ProfileScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SecurityScreenDestination
@@ -137,6 +139,13 @@ fun SettingsScreen(
                     description = BuildConfig.VERSION_NAME,
                     leading = { IconTile(Icons.Filled.Info) },
                     onClick = viewModel::onVersionTapped,
+                )
+            }
+            item {
+                SettingsItem(
+                    title = stringResource(R.string.settings_licenses),
+                    leading = { IconTile(Icons.Filled.Description) },
+                    onClick = { navigator.navigate(LicensesScreenDestination) },
                 )
             }
             item {
